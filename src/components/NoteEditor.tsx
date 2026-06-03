@@ -2,6 +2,12 @@ import { useRef, useEffect, type KeyboardEvent } from 'react'
 import NoteRulesLayer from './NoteRulesLayer'
 import type { Note, NoteField } from '../types/note'
 import {
+  clampInnerTextToBox,
+  fitsInBox,
+  placeCaretAtEnd,
+  clampTextareaValue,
+} from '../utils/boundedText'
+import {
   isNotesContentEmpty,
   sanitizeNotesHtml,
   setNotesEditorContent,
@@ -21,6 +27,7 @@ function PlainEditable({
   readOnly,
   syncKey,
   className = '',
+  clampToBounds = false,
 }: {
   value: string
   onChange: (value: string) => void
@@ -28,14 +35,35 @@ function PlainEditable({
   readOnly: boolean
   syncKey: string
   className?: string
+  clampToBounds?: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const lastGoodRef = useRef(value)
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    el.innerText = value
+    let text = value
+    if (clampToBounds && !readOnly) {
+      text = clampInnerTextToBox(el, value)
+      if (text !== value) onChange(text)
+    } else {
+      el.innerText = value
+    }
+    lastGoodRef.current = text
   }, [syncKey])
+
+  const handleInput = (el: HTMLDivElement) => {
+    if (readOnly) return
+    const text = el.innerText
+    if (clampToBounds && !fitsInBox(el)) {
+      el.innerText = lastGoodRef.current
+      placeCaretAtEnd(el)
+      return
+    }
+    lastGoodRef.current = text
+    onChange(text)
+  }
 
   return (
     <div
@@ -46,8 +74,60 @@ function PlainEditable({
       aria-multiline
       aria-readonly={readOnly}
       data-placeholder={placeholder}
-      onInput={(e) => !readOnly && onChange(e.currentTarget.innerText)}
-      className={`editable-field outline-none ${readOnly ? 'cursor-default text-slate-600' : ''} ${className}`}
+      onInput={(e) => handleInput(e.currentTarget)}
+      className={`editable-field note-bounded-field outline-none ${readOnly ? 'cursor-default text-slate-600' : ''} ${className}`}
+    />
+  )
+}
+
+function BoundedSummaryField({
+  value,
+  onChange,
+  placeholder,
+  readOnly,
+  syncKey,
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  readOnly: boolean
+  syncKey: string
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  const lastGoodRef = useRef(value)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el || readOnly) {
+      lastGoodRef.current = value
+      return
+    }
+    const clamped = clampTextareaValue(el, value)
+    lastGoodRef.current = clamped
+    if (clamped !== value) onChange(clamped)
+  }, [syncKey])
+
+  const handleChange = (next: string) => {
+    const el = ref.current
+    if (!el || readOnly) return
+
+    const clamped = clampTextareaValue(el, next)
+    lastGoodRef.current = clamped
+    if (clamped !== next) {
+      el.value = clamped
+    }
+    onChange(clamped)
+  }
+
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      readOnly={readOnly}
+      onChange={(e) => handleChange(e.target.value)}
+      placeholder={placeholder}
+      rows={5}
+      className={`note-bounded-field note-summary-input h-[5.5rem] max-h-[5.5rem] w-full resize-none overflow-hidden border-0 bg-transparent text-xs leading-relaxed placeholder:text-slate-300 focus:outline-none focus:ring-0 ${readOnly ? 'cursor-default text-slate-600' : 'text-slate-800'}`}
     />
   )
 }
@@ -174,9 +254,9 @@ export default function NoteEditor({
       />
 
       <div className="note-body-section flex min-h-0 flex-1 border-t border-slate-200">
-        <section className="note-pad-inset flex w-[25%] flex-col border-r border-slate-200 py-3">
+        <section className="note-keyword-column note-pad-inset flex w-[25%] min-h-0 flex-col overflow-hidden border-r border-slate-200 py-3">
           {readOnly ? (
-            <div className="min-h-0 flex-1 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">
+            <div className="note-bounded-field min-h-0 flex-1 overflow-hidden whitespace-pre-wrap text-xs leading-relaxed text-slate-600">
               {keywords || <span className="text-slate-300">Keywords</span>}
             </div>
           ) : (
@@ -186,6 +266,7 @@ export default function NoteEditor({
               placeholder="Keywords"
               readOnly={false}
               syncKey={note.id}
+              clampToBounds
               className="min-h-0 flex-1 text-xs leading-relaxed text-slate-800"
             />
           )}
@@ -203,15 +284,22 @@ export default function NoteEditor({
         </section>
       </div>
 
-      <footer className="note-pad-inset note-summary-footer flex min-h-[7.5rem] shrink-0 flex-col border-t border-slate-300 py-5">
-        <textarea
-          value={summary}
-          readOnly={readOnly}
-          onChange={(e) => onFieldChange('summary_content', e.target.value)}
-          placeholder="Write a summary"
-          rows={5}
-          className={`min-h-[5.5rem] w-full flex-1 resize-none border-0 bg-transparent text-xs leading-relaxed placeholder:text-slate-300 focus:outline-none focus:ring-0 ${readOnly ? 'cursor-default text-slate-600' : 'text-slate-800'}`}
-        />
+      <footer className="note-pad-inset note-summary-footer flex h-[7.5rem] max-h-[7.5rem] shrink-0 flex-col overflow-hidden border-t border-slate-300 py-5">
+        {readOnly ? (
+          <div className="note-bounded-field note-summary-input h-[5.5rem] max-h-[5.5rem] overflow-hidden whitespace-pre-wrap text-xs leading-relaxed text-slate-600">
+            {summary || (
+              <span className="text-slate-300">Write a summary</span>
+            )}
+          </div>
+        ) : (
+          <BoundedSummaryField
+            value={summary}
+            onChange={(v) => onFieldChange('summary_content', v)}
+            placeholder="Write a summary"
+            readOnly={false}
+            syncKey={note.id}
+          />
+        )}
       </footer>
     </article>
   )

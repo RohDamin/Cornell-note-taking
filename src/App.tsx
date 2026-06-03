@@ -19,8 +19,19 @@ import type { Chapter } from './types/chapter'
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 export default function App() {
-  const { userId, email, isLoggedIn, loading, signIn, signUp, logout } =
-    useAuth()
+  const {
+    userId,
+    email,
+    isLoggedIn,
+    loading,
+    signIn,
+    signUp,
+    logout,
+    needsPasswordReset,
+    requestPasswordResetEmail,
+    updatePassword,
+    dismissPasswordRecovery,
+  } = useAuth()
 
   const [authOpen, setAuthOpen] = useState(false)
   const [authTab, setAuthTab] = useState<AuthModalTab>('login')
@@ -38,9 +49,8 @@ export default function App() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const currentNoteRef = useRef(currentNote)
-  const mainScrollRef = useRef<HTMLElement>(null)
+  const noteScrollRef = useRef<HTMLDivElement>(null)
   const [showContact, setShowContact] = useState(false)
-
   useEffect(() => {
     currentNoteRef.current = currentNote
   }, [currentNote])
@@ -51,6 +61,12 @@ export default function App() {
     setAuthTab(tab)
     setAuthOpen(true)
   }
+
+  useEffect(() => {
+    if (needsPasswordReset) {
+      setAuthOpen(true)
+    }
+  }, [needsPasswordReset])
 
   const loadChapters = useCallback(async () => {
     if (!userId) return
@@ -229,24 +245,33 @@ export default function App() {
     return () => window.removeEventListener('afterprint', clearPrint)
   }, [])
 
-  const updateContactVisibility = useCallback(() => {
-    const el = mainScrollRef.current
-    if (!el) return
-    const canScroll = el.scrollHeight > el.clientHeight + 40
-    const distanceFromBottom =
-      el.scrollHeight - el.scrollTop - el.clientHeight
-    setShowContact(canScroll && distanceFromBottom < 120)
+  const syncContactVisibility = useCallback(() => {
+    const scroll = noteScrollRef.current
+    if (!scroll) return
+    const remaining =
+      scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight
+    setShowContact(remaining <= 80)
   }, [])
 
   useEffect(() => {
-    setShowContact(false)
-    const el = mainScrollRef.current
-    if (!el) return
-    updateContactVisibility()
-    const ro = new ResizeObserver(updateContactVisibility)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [currentNote.id, updateContactVisibility])
+    const scroll = noteScrollRef.current
+    if (!scroll) return
+
+    syncContactVisibility()
+    scroll.addEventListener('scroll', syncContactVisibility, { passive: true })
+    window.addEventListener('resize', syncContactVisibility)
+
+    const ro = new ResizeObserver(syncContactVisibility)
+    ro.observe(scroll)
+    const pad = scroll.querySelector('.a4-pad-wrapper')
+    if (pad) ro.observe(pad)
+
+    return () => {
+      ro.disconnect()
+      scroll.removeEventListener('scroll', syncContactVisibility)
+      window.removeEventListener('resize', syncContactVisibility)
+    }
+  }, [currentNote.id, syncContactVisibility])
 
   const buildChapterPrintNotes = useCallback(
     async (chapterId: string): Promise<Note[]> => {
@@ -317,11 +342,15 @@ export default function App() {
       />
 
       <LoginModal
-        open={authOpen}
+        open={authOpen || needsPasswordReset}
         initialTab={authTab}
+        forceResetView={needsPasswordReset}
         onClose={() => setAuthOpen(false)}
+        onDismissRecovery={dismissPasswordRecovery}
         onSignIn={signIn}
         onSignUp={signUp}
+        onRequestPasswordReset={requestPasswordResetEmail}
+        onUpdatePassword={updatePassword}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -338,21 +367,24 @@ export default function App() {
           onSelectNote={handleSelectNote}
         />
 
-        <main
-          ref={mainScrollRef}
-          onScroll={updateContactVisibility}
-          className="screen-only flex flex-1 flex-col items-center overflow-y-auto p-6"
-        >
-          <div className="a4-pad-wrapper">
-            <NoteEditor
-              key={`${currentNote.id}-${readOnly}`}
-              note={currentNote}
-              readOnly={readOnly}
-              onFieldChange={handleFieldChange}
-            />
+        <div className="screen-only flex min-h-0 min-w-0 flex-1 flex-col">
+          <div
+            ref={noteScrollRef}
+            onScroll={syncContactVisibility}
+            className="note-scroll-panel flex flex-1 flex-col items-center overflow-y-auto px-4 pb-6 pt-6"
+          >
+            <div className="a4-pad-wrapper">
+              <NoteEditor
+                key={`${currentNote.id}-${readOnly}`}
+                note={currentNote}
+                readOnly={readOnly}
+                onFieldChange={handleFieldChange}
+              />
+            </div>
+            <div className="note-pad-scroll-spacer" aria-hidden />
           </div>
-          <ContactLink visible={showContact} />
-        </main>
+          {showContact && <ContactLink />}
+        </div>
       </div>
 
       {printQueue && printQueue.length > 0 && (

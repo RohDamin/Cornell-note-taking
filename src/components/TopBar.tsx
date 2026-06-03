@@ -49,21 +49,21 @@ export default function TopBar({
             </span>
           )}
           {isLoggedIn && email && (
-            <span className="max-w-[120px] truncate text-[10px] text-slate-400">
+            <span className="max-w-[200px] truncate text-[14px] text-slate-500">
               {email}
             </span>
           )}
           <button
             type="button"
             onClick={onPrint}
-            className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-[10px] text-slate-700 transition hover:bg-slate-50"
+            className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[15px] text-slate-700 transition hover:bg-slate-50"
           >
             PDF Export
           </button>
           <button
             type="button"
             onClick={onSave}
-            className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-[10px] text-slate-700 transition hover:bg-slate-50"
+            className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[15px] text-slate-700 transition hover:bg-slate-50"
           >
             Save
           </button>
@@ -71,7 +71,7 @@ export default function TopBar({
             <button
               type="button"
               onClick={onLogout}
-              className="rounded-md bg-slate-800 px-1.5 py-1 text-[10px] text-white transition hover:bg-slate-700"
+              className="rounded-md bg-slate-800 px-2 py-1.5 text-[15px] text-white transition hover:bg-slate-700"
             >
               Logout
             </button>
@@ -80,14 +80,14 @@ export default function TopBar({
               <button
                 type="button"
                 onClick={onLoginClick}
-                className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-[10px] text-slate-700 transition hover:bg-slate-50"
+                className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[15px] text-slate-700 transition hover:bg-slate-50"
               >
                 Log in
               </button>
               <button
                 type="button"
                 onClick={onSignUpClick}
-                className="rounded-md bg-slate-800 px-1.5 py-1 text-[10px] text-white transition hover:bg-slate-700"
+                className="rounded-md bg-slate-800 px-2 py-1.5 text-[15px] text-white transition hover:bg-slate-700"
               >
                 Sign up
               </button>

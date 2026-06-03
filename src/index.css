@@ -23,7 +23,7 @@ body {
 /* 상단 로고 — 고전 세리프 */
 .brand-logo {
   font-family: 'Cormorant Garamond', 'Times New Roman', Georgia, serif;
-  font-size: 1.375rem;
+  font-size: 1.5rem;
   font-weight: 600;
   font-style: italic;
   line-height: 1;
@@ -31,18 +31,38 @@ body {
   color: #1e293b;
 }
 
-/* A4 노트 패드 — 실제 비율 유지, 화면에서는 축소 표시 */
-.a4-pad-wrapper {
-  transform: scale(0.9);
-  transform-origin: top center;
-  margin-bottom: calc(297mm * -0.1);
+/* A4 노트 패드 — 실제 비율 유지, 화면에서는 메인 영역 너비에 맞춤 (최대 1.25배) */
+.screen-only,
+.note-scroll-panel {
+  container-type: inline-size;
+  container-name: note-main;
+}
+
+@container note-main (min-width: 0) {
+  .screen-only {
+    --pad-scale: min(1.25, 100cqw / 210mm);
+  }
+
+  .a4-pad-wrapper {
+    width: 210mm;
+    height: 297mm;
+    transform: scale(var(--pad-scale));
+    transform-origin: top center;
+    margin-bottom: max(0px, calc(297mm * (1 - var(--pad-scale))));
+  }
+
+  /* scale로 튀어나온 시각 높이만큼 스크롤 여유 확보 */
+  .note-pad-scroll-spacer {
+    width: 100%;
+    height: max(0px, calc(297mm * (var(--pad-scale) - 1)));
+    flex-shrink: 0;
+  }
 }
 
 .a4-pad,
 .note-pad {
   width: 210mm;
   height: 297mm;
-  max-width: 100%;
   overflow: hidden;
 }
 
@@ -95,11 +115,27 @@ body {
   box-sizing: border-box;
 }
 
+.note-keyword-column {
+  min-height: 0;
+}
+
+.note-bounded-field {
+  overflow: hidden;
+  overflow-y: hidden;
+  overscroll-behavior: none;
+  word-break: break-word;
+}
+
 .note-summary-footer {
   position: relative;
   z-index: 2;
   flex-shrink: 0;
   background-color: #fff;
+  overflow: hidden;
+}
+
+.note-summary-input {
+  box-sizing: border-box;
 }
 
 .note-rule-line {

@@ -37,7 +37,7 @@ export default function NoteSidebar({
   if (!isLoggedIn) {
     return (
       <aside className="print:hidden flex w-56 shrink-0 flex-col border-r border-slate-200 bg-slate-50 p-4">
-        <p className="text-xs leading-relaxed text-slate-500">
+        <p className="text-[17px] leading-relaxed text-slate-500">
           Sign in to save notes and manage chapters.
         </p>
       </aside>
@@ -56,7 +56,7 @@ export default function NoteSidebar({
     <aside className="print:hidden flex w-56 shrink-0 flex-col border-r border-slate-200 bg-slate-50">
       <nav className="flex-1 overflow-y-auto p-2">
         {chapters.length === 0 ? (
-          <p className="px-2 py-4 text-center text-[10px] text-slate-400">
+          <p className="px-2 py-4 text-center text-[15px] text-slate-400">
             Use Add Chapter below to create one.
           </p>
         ) : (
@@ -75,20 +75,20 @@ export default function NoteSidebar({
                       className="flex min-w-0 flex-1 items-center gap-1 py-1.5 text-left"
                     >
                       <span
-                        className={`shrink-0 text-[10px] text-slate-400 transition ${
+                        className={`shrink-0 text-[15px] text-slate-400 transition ${
                           isOpen ? 'rotate-90' : ''
                         }`}
                       >
                         ▶
                       </span>
-                      <span className="truncate text-xs font-medium text-slate-700">
+                      <span className="truncate text-[17px] font-medium text-slate-700">
                         {chapter.name}
                       </span>
                     </button>
                     <button
                       type="button"
                       onClick={() => onCreateNote(chapter.id)}
-                      className="shrink-0 rounded px-1.5 py-1 text-[10px] text-slate-500 transition hover:bg-white hover:text-slate-800"
+                      className="shrink-0 rounded px-1.5 py-1 text-[15px] text-slate-500 transition hover:bg-white hover:text-slate-800"
                     >
                       Add Note
                     </button>
@@ -97,11 +97,11 @@ export default function NoteSidebar({
                   {isOpen && (
                     <div className="ml-3 border-l border-slate-200 pl-2 pb-2">
                       {isLoading ? (
-                        <p className="px-2 py-1 text-[10px] text-slate-400">
+                        <p className="px-2 py-1 text-[15px] text-slate-400">
                           Loading…
                         </p>
                       ) : notes.length === 0 ? (
-                        <p className="px-2 py-1 text-[10px] text-slate-400">
+                        <p className="px-2 py-1 text-[15px] text-slate-400">
                           No notes
                         </p>
                       ) : (
@@ -111,7 +111,7 @@ export default function NoteSidebar({
                               <button
                                 type="button"
                                 onClick={() => onSelectNote(note)}
-                                className={`w-full truncate rounded-md px-2 py-1.5 text-left text-[10px] transition ${
+                                className={`w-full truncate rounded-md px-2 py-1.5 text-left text-[15px] transition ${
                                   note.id === activeNoteId
                                     ? 'bg-white font-medium text-slate-900 shadow-sm'
                                     : 'text-slate-600 hover:bg-white/70'
@@ -140,14 +140,14 @@ export default function NoteSidebar({
               value={newChapterName}
               onChange={(e) => setNewChapterName(e.target.value)}
               placeholder="Chapter name"
-              className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-slate-500"
+              className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-[17px] outline-none focus:border-slate-500"
               onKeyDown={(e) => e.key === 'Enter' && handleAddChapter()}
             />
             <div className="flex gap-1">
               <button
                 type="button"
                 onClick={handleAddChapter}
-                className="flex-1 rounded-md bg-slate-800 py-1.5 text-xs text-white hover:bg-slate-700"
+                className="flex-1 rounded-md bg-slate-800 py-1.5 text-[17px] text-white hover:bg-slate-700"
               >
                 Add
               </button>
@@ -157,7 +157,7 @@ export default function NoteSidebar({
                   setShowChapterInput(false)
                   setNewChapterName('')
                 }}
-                className="rounded-md px-2 py-1.5 text-xs text-slate-500 hover:bg-white"
+                className="rounded-md px-2 py-1.5 text-[17px] text-slate-500 hover:bg-white"
               >
                 Cancel
               </button>
@@ -167,7 +167,7 @@ export default function NoteSidebar({
           <button
             type="button"
             onClick={() => setShowChapterInput(true)}
-            className="w-full rounded-md border border-dashed border-slate-300 py-2 text-[10px] text-slate-600 transition hover:border-slate-400 hover:bg-white"
+            className="w-full rounded-md border border-dashed border-slate-300 py-2 text-[15px] text-slate-600 transition hover:border-slate-400 hover:bg-white"
           >
             Add Chapter
           </button>
