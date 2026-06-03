@@ -33,9 +33,9 @@ body {
 
 /* A4 노트 패드 — 실제 비율 유지, 화면에서는 축소 표시 */
 .a4-pad-wrapper {
-  transform: scale(0.78);
+  transform: scale(0.9);
   transform-origin: top center;
-  margin-bottom: calc(297mm * -0.22);
+  margin-bottom: calc(297mm * -0.1);
 }
 
 .a4-pad {
