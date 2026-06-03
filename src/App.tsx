@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ChapterPrintView from './components/ChapterPrintView'
-import LoginModal from './components/LoginModal'
+import ContactLink from './components/ContactLink'
+import LoginModal, { type AuthModalTab } from './components/LoginModal'
 import NoteEditor from './components/NoteEditor'
 import NoteSidebar from './components/NoteSidebar'
 import TopBar from './components/TopBar'
@@ -18,9 +19,11 @@ import type { Chapter } from './types/chapter'
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 export default function App() {
-  const { username, isLoggedIn, login, logout } = useAuth()
+  const { userId, email, isLoggedIn, loading, signIn, signUp, logout } =
+    useAuth()
 
-  const [loginOpen, setLoginOpen] = useState(false)
+  const [authOpen, setAuthOpen] = useState(false)
+  const [authTab, setAuthTab] = useState<AuthModalTab>('login')
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [notesByChapter, setNotesByChapter] = useState<Record<string, Note[]>>({})
   const [expandedChapterIds, setExpandedChapterIds] = useState<Set<string>>(
@@ -35,28 +38,35 @@ export default function App() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const currentNoteRef = useRef(currentNote)
+  const mainScrollRef = useRef<HTMLElement>(null)
+  const [showContact, setShowContact] = useState(false)
 
   useEffect(() => {
     currentNoteRef.current = currentNote
   }, [currentNote])
 
-  const readOnly = !isNoteEditable(currentNote, username)
+  const readOnly = !isNoteEditable(currentNote, userId)
+
+  const openAuthModal = (tab: AuthModalTab) => {
+    setAuthTab(tab)
+    setAuthOpen(true)
+  }
 
   const loadChapters = useCallback(async () => {
-    if (!username) return
-    const { data, error } = await fetchChapters(username)
+    if (!userId) return
+    const { data, error } = await fetchChapters(userId)
     if (error) {
       setSaveMessage(error)
       return
     }
     setChapters(data)
-  }, [username])
+  }, [userId])
 
   const loadNotesForChapter = useCallback(
     async (chapterId: string) => {
-      if (!username) return
+      if (!userId) return
       setLoadingChapterId(chapterId)
-      const { data, error } = await fetchNotesByChapter(chapterId, username)
+      const { data, error } = await fetchNotesByChapter(chapterId, userId)
       setLoadingChapterId(null)
       if (error) {
         setSaveMessage(error)
@@ -64,36 +74,36 @@ export default function App() {
       }
       setNotesByChapter((prev) => ({ ...prev, [chapterId]: data }))
     },
-    [username],
+    [userId],
   )
 
   useEffect(() => {
-    if (isLoggedIn && username) {
+    if (isLoggedIn && userId) {
       loadChapters()
-    } else {
+    } else if (!loading) {
       setChapters([])
       setNotesByChapter({})
       setExpandedChapterIds(new Set())
     }
-  }, [isLoggedIn, username, loadChapters])
+  }, [isLoggedIn, userId, loading, loadChapters])
 
   const persistNote = useCallback(
     async (note: Note) => {
-      if (!isLoggedIn || !username) return
+      if (!isLoggedIn || !userId) return
 
-      if (!isNoteEditable(note, username)) {
+      if (!isNoteEditable(note, userId)) {
         setSaveStatus('error')
-        setSaveMessage('수정 권한이 없는 노트입니다.')
+        setSaveMessage('You cannot edit this note.')
         return
       }
 
       if (!note.chapter_id) {
         setSaveStatus('error')
-        setSaveMessage('챕터에 속한 노트만 저장할 수 있습니다.')
+        setSaveMessage('You can only save notes that belong to a chapter.')
         return
       }
 
-      const toSave: Note = { ...note, username }
+      const toSave: Note = { ...note, user_id: userId }
 
       setSaveStatus('saving')
       setSaveMessage(null)
@@ -122,7 +132,7 @@ export default function App() {
       }
       window.setTimeout(() => setSaveStatus('idle'), 2000)
     },
-    [isLoggedIn, username],
+    [isLoggedIn, userId],
   )
 
   const scheduleAutoSave = useCallback(
@@ -145,7 +155,8 @@ export default function App() {
 
   const handleSave = () => {
     if (!isLoggedIn) {
-      alert('회원가입 해야 이용 가능한 기능입니다.')
+      alert('You need to sign up to use this feature.')
+      openAuthModal('signup')
       return
     }
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -168,8 +179,8 @@ export default function App() {
   }
 
   const handleCreateChapter = async (name: string) => {
-    if (!username) return
-    const { data, error } = await createChapter(username, name)
+    if (!userId) return
+    const { data, error } = await createChapter(userId, name)
     if (error) {
       setSaveMessage(error)
       return
@@ -185,7 +196,7 @@ export default function App() {
 
   const handleCreateNote = (chapterId: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    const note = createEmptyNote(chapterId, username)
+    const note = createEmptyNote(chapterId, userId)
     setCurrentNote(note)
     setSaveStatus('idle')
     setSaveMessage(null)
@@ -198,9 +209,9 @@ export default function App() {
     setSaveMessage(null)
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    logout()
+    await logout()
     setCurrentNote(createEmptyNote())
     setSaveStatus('idle')
     setSaveMessage(null)
@@ -218,11 +229,30 @@ export default function App() {
     return () => window.removeEventListener('afterprint', clearPrint)
   }, [])
 
+  const updateContactVisibility = useCallback(() => {
+    const el = mainScrollRef.current
+    if (!el) return
+    const canScroll = el.scrollHeight > el.clientHeight + 40
+    const distanceFromBottom =
+      el.scrollHeight - el.scrollTop - el.clientHeight
+    setShowContact(canScroll && distanceFromBottom < 120)
+  }, [])
+
+  useEffect(() => {
+    setShowContact(false)
+    const el = mainScrollRef.current
+    if (!el) return
+    updateContactVisibility()
+    const ro = new ResizeObserver(updateContactVisibility)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [currentNote.id, updateContactVisibility])
+
   const buildChapterPrintNotes = useCallback(
     async (chapterId: string): Promise<Note[]> => {
       let list = notesByChapter[chapterId] ?? []
-      if (list.length === 0 && username) {
-        const { data, error } = await fetchNotesByChapter(chapterId, username)
+      if (list.length === 0 && userId) {
+        const { data, error } = await fetchNotesByChapter(chapterId, userId)
         if (error) {
           setSaveMessage(error)
           return [currentNoteRef.current]
@@ -241,7 +271,7 @@ export default function App() {
       }
       return merged.length > 0 ? merged : [current]
     },
-    [notesByChapter, username],
+    [notesByChapter, userId],
   )
 
   const handlePrint = useCallback(async () => {
@@ -250,10 +280,10 @@ export default function App() {
     const current = currentNoteRef.current
     let queue: Note[] = [current]
 
-    if (isLoggedIn && current.chapter_id && username) {
+    if (isLoggedIn && current.chapter_id && userId) {
       queue = await buildChapterPrintNotes(current.chapter_id)
       if (queue.length === 0) {
-        alert('이 챕터에 출력할 노트가 없습니다.')
+        alert('There are no notes to export in this chapter.')
         return
       }
     }
@@ -262,7 +292,15 @@ export default function App() {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => window.print())
     })
-  }, [isLoggedIn, username, buildChapterPrintNotes])
+  }, [isLoggedIn, userId, buildChapterPrintNotes])
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-100 text-sm text-slate-500">
+        Loading…
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen flex-col bg-slate-100">
@@ -270,17 +308,20 @@ export default function App() {
         saveStatus={saveStatus}
         saveMessage={saveMessage}
         isLoggedIn={isLoggedIn}
-        username={username}
+        email={email}
         onSave={handleSave}
         onPrint={handlePrint}
-        onLoginClick={() => setLoginOpen(true)}
+        onLoginClick={() => openAuthModal('login')}
+        onSignUpClick={() => openAuthModal('signup')}
         onLogout={handleLogout}
       />
 
       <LoginModal
-        open={loginOpen}
-        onClose={() => setLoginOpen(false)}
-        onLogin={login}
+        open={authOpen}
+        initialTab={authTab}
+        onClose={() => setAuthOpen(false)}
+        onSignIn={signIn}
+        onSignUp={signUp}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -297,7 +338,11 @@ export default function App() {
           onSelectNote={handleSelectNote}
         />
 
-        <main className="screen-only flex flex-1 items-start justify-center overflow-y-auto p-6">
+        <main
+          ref={mainScrollRef}
+          onScroll={updateContactVisibility}
+          className="screen-only flex flex-1 flex-col items-center overflow-y-auto p-6"
+        >
           <div className="a4-pad-wrapper">
             <NoteEditor
               key={`${currentNote.id}-${readOnly}`}
@@ -306,6 +351,7 @@ export default function App() {
               onFieldChange={handleFieldChange}
             />
           </div>
+          <ContactLink visible={showContact} />
         </main>
       </div>
 

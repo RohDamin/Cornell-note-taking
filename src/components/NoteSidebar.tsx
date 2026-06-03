@@ -16,7 +16,7 @@ interface NoteSidebarProps {
 }
 
 function displayTitle(note: Note): string {
-  return note.main_title?.trim() || '제목 없음'
+  return note.main_title?.trim() || 'Untitled'
 }
 
 export default function NoteSidebar({
@@ -38,7 +38,7 @@ export default function NoteSidebar({
     return (
       <aside className="print:hidden flex w-56 shrink-0 flex-col border-r border-slate-200 bg-slate-50 p-4">
         <p className="text-xs leading-relaxed text-slate-500">
-          로그인 후 저장 및 챕터 관리 기능을 이용할 수 있습니다.
+          Sign in to save notes and manage chapters.
         </p>
       </aside>
     )
@@ -57,7 +57,7 @@ export default function NoteSidebar({
       <nav className="flex-1 overflow-y-auto p-2">
         {chapters.length === 0 ? (
           <p className="px-2 py-4 text-center text-[10px] text-slate-400">
-            Add Chapter로 챕터를 추가해 주세요
+            Use Add Chapter below to create one.
           </p>
         ) : (
           <ul className="space-y-1">
@@ -98,11 +98,11 @@ export default function NoteSidebar({
                     <div className="ml-3 border-l border-slate-200 pl-2 pb-2">
                       {isLoading ? (
                         <p className="px-2 py-1 text-[10px] text-slate-400">
-                          불러오는 중…
+                          Loading…
                         </p>
                       ) : notes.length === 0 ? (
                         <p className="px-2 py-1 text-[10px] text-slate-400">
-                          노트 없음
+                          No notes
                         </p>
                       ) : (
                         <ul className="space-y-0.5">
@@ -139,7 +139,7 @@ export default function NoteSidebar({
               type="text"
               value={newChapterName}
               onChange={(e) => setNewChapterName(e.target.value)}
-              placeholder="챕터 이름"
+              placeholder="Chapter name"
               className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-slate-500"
               onKeyDown={(e) => e.key === 'Enter' && handleAddChapter()}
             />
@@ -149,7 +149,7 @@ export default function NoteSidebar({
                 onClick={handleAddChapter}
                 className="flex-1 rounded-md bg-slate-800 py-1.5 text-xs text-white hover:bg-slate-700"
               >
-                추가
+                Add
               </button>
               <button
                 type="button"
@@ -159,7 +159,7 @@ export default function NoteSidebar({
                 }}
                 className="rounded-md px-2 py-1.5 text-xs text-slate-500 hover:bg-white"
               >
-                취소
+                Cancel
               </button>
             </div>
           </div>

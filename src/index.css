@@ -38,10 +38,12 @@ body {
   margin-bottom: calc(297mm * -0.1);
 }
 
-.a4-pad {
+.a4-pad,
+.note-pad {
   width: 210mm;
   height: 297mm;
   max-width: 100%;
+  overflow: hidden;
 }
 
 /* 대제목과 동일 — 좌·우 2rem (px-8) */
@@ -55,37 +57,64 @@ body {
   padding-right: 2rem;
 }
 
-/* 줄눈 노트 (우측 본문) */
+/* 소제목 아래 — 본문 영역 상단 구분선 */
+.note-body-section {
+  border-top-width: 1px;
+  border-top-color: #e2e8f0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 줄눈 노트 (우측 본문) — 줄은 열 전체 너비, 텍스트만 왼쪽 여백 */
+.notes-column {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .lined-notes-wrap {
   --note-line-step: 1.75rem;
   position: relative;
-  isolation: isolate;
+  width: 100%;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
   background-color: #fff;
 }
 
-/* 줄눈 레이어 (::before — 인쇄 시에도 유지) */
-.lined-notes-wrap::before {
-  content: '';
+.note-rules-layer {
   position: absolute;
   inset: 0;
   z-index: 0;
+  display: flex;
+  width: 100%;
+  max-height: 100%;
+  flex-direction: column;
+  overflow: hidden;
   pointer-events: none;
+  box-sizing: border-box;
+}
+
+.note-summary-footer {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
   background-color: #fff;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    #fff 0,
-    #fff calc(var(--note-line-step) - 0.5px),
-    #e8ecf0 calc(var(--note-line-step) - 0.5px),
-    #e8ecf0 var(--note-line-step)
-  );
-  background-size: 100% var(--note-line-step);
+}
+
+.note-rule-line {
+  flex-shrink: 0;
+  height: var(--note-line-step);
+  border-bottom: 1px solid #e2e8f0;
+  box-sizing: border-box;
 }
 
 .lined-notes-input {
   position: relative;
   z-index: 1;
+  width: 100%;
+  padding-left: 1.5rem;
+  box-sizing: border-box;
   line-height: var(--note-line-step);
   white-space: pre-wrap;
   word-break: break-word;
@@ -166,36 +195,42 @@ body {
     break-inside: avoid;
   }
 
-  .note-pad > .flex-1.border-t {
-    border-top: none !important;
+  /* 소제목 아래 넓은 구분선 — PDF에서도 표시 */
+  .note-body-section {
+    border-top: 0.75pt solid #94a3b8 !important;
+    overflow: hidden !important;
   }
 
-  /* 인쇄용 줄눈 — 1px 실선 (0.35px는 PDF에서 사라짐) */
-  .lined-notes-wrap::before {
-    display: block !important;
+  .notes-column {
+    width: 75% !important;
+    overflow: hidden !important;
+  }
+
+  .lined-notes-wrap {
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .note-rules-layer {
+    display: flex !important;
+    width: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .note-summary-footer {
     background-color: #fff !important;
-    background-image: repeating-linear-gradient(
-      to bottom,
-      #ffffff 0,
-      #ffffff 27px,
-      #c8ced6 27px,
-      #c8ced6 28px
-    ) !important;
-    background-size: 100% 28px !important;
   }
 
-  /* 본문 에디터에도 동일 패턴 이중 적용 (브라우저별 인쇄 호환) */
+  .note-rule-line {
+    border-bottom: 0.5pt solid #b8c0c8 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   .lined-notes-input {
-    background-color: transparent !important;
-    background-image: repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 27px,
-      #c8ced6 27px,
-      #c8ced6 28px
-    ) !important;
-    background-size: 100% 28px !important;
-    line-height: 28px !important;
+    background: transparent !important;
+    line-height: var(--note-line-step) !important;
   }
 }
 

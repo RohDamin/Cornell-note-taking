@@ -1,7 +1,7 @@
 export interface Note {
   id: string
   chapter_id: string | null
-  username: string | null
+  user_id: string | null
   main_title: string | null
   sub_title: string | null
   keyword_content: string | null
@@ -9,19 +9,16 @@ export interface Note {
   summary_content: string | null
 }
 
-export type NoteField = keyof Omit<
-  Note,
-  'id' | 'chapter_id' | 'username'
->
+export type NoteField = keyof Omit<Note, 'id' | 'chapter_id' | 'user_id'>
 
 export function createEmptyNote(
   chapterId: string | null = null,
-  username: string | null = null,
+  userId: string | null = null,
 ): Note {
   return {
     id: crypto.randomUUID(),
     chapter_id: chapterId,
-    username,
+    user_id: userId,
     main_title: '',
     sub_title: '',
     keyword_content: '',
@@ -32,9 +29,9 @@ export function createEmptyNote(
 
 export function isNoteEditable(
   note: Note,
-  currentUsername: string | null,
+  currentUserId: string | null,
 ): boolean {
-  if (!currentUsername) return true
-  if (!note.username) return true
-  return note.username === currentUsername
+  if (!currentUserId) return true
+  if (!note.user_id) return true
+  return note.user_id === currentUserId
 }

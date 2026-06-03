@@ -2,12 +2,12 @@ import { supabase } from '../lib/supabaseClient.js'
 import type { Chapter } from '../types/chapter'
 
 export async function fetchChapters(
-  username: string,
+  userId: string,
 ): Promise<{ data: Chapter[]; error: string | null }> {
   const { data, error } = await supabase
     .from('chapters')
     .select('*')
-    .eq('username', username)
+    .eq('user_id', userId)
     .order('name', { ascending: true })
 
   if (error) return { data: [], error: error.message }
@@ -15,15 +15,15 @@ export async function fetchChapters(
 }
 
 export async function createChapter(
-  username: string,
+  userId: string,
   name: string,
 ): Promise<{ data: Chapter | null; error: string | null }> {
   const trimmed = name.trim()
-  if (!trimmed) return { data: null, error: '챕터 이름을 입력해 주세요.' }
+  if (!trimmed) return { data: null, error: 'Please enter a chapter name.' }
 
   const { data, error } = await supabase
     .from('chapters')
-    .insert({ name: trimmed, username })
+    .insert({ name: trimmed, user_id: userId })
     .select()
     .single()
 

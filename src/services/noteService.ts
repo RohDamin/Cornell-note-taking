@@ -3,13 +3,13 @@ import type { Note } from '../types/note'
 
 export async function fetchNotesByChapter(
   chapterId: string,
-  username: string,
+  userId: string,
 ): Promise<{ data: Note[]; error: string | null }> {
   const { data, error } = await supabase
     .from('notes')
     .select('*')
     .eq('chapter_id', chapterId)
-    .eq('username', username)
+    .eq('user_id', userId)
     .order('main_title', { ascending: true })
 
   if (error) return { data: [], error: error.message }
@@ -20,10 +20,10 @@ export async function upsertNote(note: Note): Promise<{
   data: Note | null
   error: string | null
 }> {
-  if (!note.username || !note.chapter_id) {
+  if (!note.user_id || !note.chapter_id) {
     return {
       data: null,
-      error: '챕터에 속한 노트만 저장할 수 있습니다. 사이드바에서 챕터와 노트를 선택해 주세요.',
+      error: 'You can only save notes in a chapter. Select a chapter and note from the sidebar.',
     }
   }
 
@@ -33,7 +33,7 @@ export async function upsertNote(note: Note): Promise<{
       {
         id: note.id,
         chapter_id: note.chapter_id,
-        username: note.username,
+        user_id: note.user_id,
         main_title: note.main_title ?? '',
         sub_title: note.sub_title ?? '',
         keyword_content: note.keyword_content ?? '',
@@ -51,13 +51,13 @@ export async function upsertNote(note: Note): Promise<{
 
 export async function deleteNote(
   id: string,
-  username: string,
+  userId: string,
 ): Promise<{ error: string | null }> {
   const { error } = await supabase
     .from('notes')
     .delete()
     .eq('id', id)
-    .eq('username', username)
+    .eq('user_id', userId)
 
   if (error) return { error: error.message }
   return { error: null }

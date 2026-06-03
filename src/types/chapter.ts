@@ -1,5 +1,5 @@
 export interface Chapter {
   id: string
   name: string
-  username: string
+  user_id: string
 }

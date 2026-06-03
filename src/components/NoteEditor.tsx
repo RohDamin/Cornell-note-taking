@@ -1,4 +1,5 @@
 import { useRef, useEffect, type KeyboardEvent } from 'react'
+import NoteRulesLayer from './NoteRulesLayer'
 import type { Note, NoteField } from '../types/note'
 import {
   isNotesContentEmpty,
@@ -88,6 +89,7 @@ function LinedNotesArea({
     const empty = isNotesContentEmpty(value)
     return (
       <div className={`lined-notes-wrap min-h-0 ${className}`}>
+        <NoteRulesLayer />
         {empty ? (
           <div className="lined-notes-input text-xs text-slate-300">
             {placeholder}
@@ -110,6 +112,7 @@ function LinedNotesArea({
 
   return (
     <div className={`lined-notes-wrap min-h-0 ${className}`}>
+      <NoteRulesLayer />
       <div
         ref={ref}
         contentEditable
@@ -148,7 +151,7 @@ export default function NoteEditor({
     >
       {readOnly && !forPrint && (
         <div className="note-pad-inset shrink-0 bg-amber-50 py-1.5 text-center text-[10px] text-amber-700">
-          읽기 전용 — 수정할 수 없는 노트입니다
+          Read-only — you cannot edit this note
         </div>
       )}
 
@@ -157,7 +160,7 @@ export default function NoteEditor({
         value={mainTitle}
         readOnly={readOnly}
         onChange={(e) => onFieldChange('main_title', e.target.value)}
-        placeholder="01. 제목을 입력하세요"
+        placeholder="01. Enter a title"
         className={`note-pad-inset shrink-0 border-0 bg-transparent pt-8 text-2xl font-bold tracking-tight placeholder:text-slate-300 focus:outline-none focus:ring-0 ${titleClass}`}
       />
 
@@ -166,21 +169,21 @@ export default function NoteEditor({
         value={subTitle}
         readOnly={readOnly}
         onChange={(e) => onFieldChange('sub_title', e.target.value)}
-        placeholder="소제목을 입력하세요"
+        placeholder="Enter a subtitle"
         className={`note-pad-inset mt-4 shrink-0 border-0 bg-transparent pb-4 text-base font-bold placeholder:text-slate-300 focus:outline-none focus:ring-0 ${readOnly ? 'text-slate-600' : 'text-slate-600'}`}
       />
 
-      <div className="flex min-h-0 flex-1 border-t border-slate-200">
+      <div className="note-body-section flex min-h-0 flex-1 border-t border-slate-200">
         <section className="note-pad-inset flex w-[25%] flex-col border-r border-slate-200 py-3">
           {readOnly ? (
             <div className="min-h-0 flex-1 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">
-              {keywords || <span className="text-slate-300">키워드</span>}
+              {keywords || <span className="text-slate-300">Keywords</span>}
             </div>
           ) : (
             <PlainEditable
               value={keywords}
               onChange={(v) => onFieldChange('keyword_content', v)}
-              placeholder="키워드"
+              placeholder="Keywords"
               readOnly={false}
               syncKey={note.id}
               className="min-h-0 flex-1 text-xs leading-relaxed text-slate-800"
@@ -188,24 +191,24 @@ export default function NoteEditor({
           )}
         </section>
 
-        <section className="note-pad-inset-right flex w-[75%] flex-col py-3 pl-6">
+        <section className="note-pad-inset-right notes-column flex min-h-0 w-[75%] flex-col overflow-hidden py-3">
           <LinedNotesArea
             value={body}
             onChange={(v) => onFieldChange('notes_content', v)}
-            placeholder="본문을 입력하세요"
+            placeholder="Enter your notes"
             readOnly={readOnly}
             syncKey={note.id}
-            className="min-h-0 flex-1"
+            className="min-h-0 w-full flex-1"
           />
         </section>
       </div>
 
-      <footer className="note-pad-inset flex min-h-[7.5rem] shrink-0 flex-col border-t border-slate-300 py-5">
+      <footer className="note-pad-inset note-summary-footer flex min-h-[7.5rem] shrink-0 flex-col border-t border-slate-300 py-5">
         <textarea
           value={summary}
           readOnly={readOnly}
           onChange={(e) => onFieldChange('summary_content', e.target.value)}
-          placeholder="요약을 작성하세요"
+          placeholder="Write a summary"
           rows={5}
           className={`min-h-[5.5rem] w-full flex-1 resize-none border-0 bg-transparent text-xs leading-relaxed placeholder:text-slate-300 focus:outline-none focus:ring-0 ${readOnly ? 'cursor-default text-slate-600' : 'text-slate-800'}`}
         />

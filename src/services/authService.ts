@@ -1,34 +1,46 @@
 import { supabase } from '../lib/supabaseClient.js'
 
-export async function loginUser(
-  username: string,
+export async function signUpWithEmail(
+  email: string,
   password: string,
-): Promise<{ username: string | null; error: string | null }> {
-  const trimmed = username.trim()
+): Promise<{ error: string | null; needsEmailConfirmation: boolean }> {
+  const trimmed = email.trim()
   if (!trimmed || !password) {
-    return { username: null, error: '아이디와 비밀번호를 입력해 주세요.' }
+    return { error: 'Please enter your email and password.', needsEmailConfirmation: false }
   }
 
-  const { data, error } = await supabase
-    .from('custom_users')
-    .select('username')
-    .eq('username', trimmed)
-    .eq('password', password)
-    .maybeSingle()
+  const { data, error } = await supabase.auth.signUp({ email: trimmed, password })
 
   if (error) {
-    return { username: null, error: error.message }
-  }
-  if (!data) {
-    return {
-      username: null,
-      error: '아이디 또는 비밀번호가 올바르지 않습니다.',
-    }
+    return { error: error.message, needsEmailConfirmation: false }
   }
 
-  return { username: data.username, error: null }
+  return {
+    error: null,
+    needsEmailConfirmation: !data.session,
+  }
 }
 
-export function logoutUser(): void {
-  /* 상태는 AuthContext에서 처리 */
+export async function signInWithEmail(
+  email: string,
+  password: string,
+): Promise<{ error: string | null }> {
+  const trimmed = email.trim()
+  if (!trimmed || !password) {
+    return { error: 'Please enter your email and password.' }
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email: trimmed,
+    password,
+  })
+
+  if (error) return { error: error.message }
+  return { error: null }
+}
+
+export async function signOut(): Promise<{ error: string | null }> {
+  const { error } = await supabase.auth.signOut()
+  if (error) return { error: error.message }
+  return { error: null }
 }
