@@ -9,9 +9,9 @@ import {
 } from '../utils/boundedText'
 import {
   isNotesContentEmpty,
-  normalizeEditorBoldTags,
+  normalizeEditorBoldTagsInPlace,
   notesContentToDisplayHtml,
-  serializeNotesEditorHtml,
+  serializeNotesEditorElement,
   setNotesEditorContent,
 } from '../utils/notesContent'
 import {
@@ -197,7 +197,7 @@ function LinedNotesArea({
       e.preventDefault()
       document.execCommand('insertLineBreak')
       if (ref.current) {
-        onChange(serializeNotesEditorHtml(ref.current.innerHTML))
+        onChange(serializeNotesEditorElement(ref.current))
       }
       return
     }
@@ -206,11 +206,8 @@ function LinedNotesArea({
       e.preventDefault()
       document.execCommand('bold')
       if (ref.current) {
-        const html = normalizeEditorBoldTags(ref.current.innerHTML)
-        if (html !== ref.current.innerHTML) {
-          ref.current.innerHTML = html
-        }
-        onChange(serializeNotesEditorHtml(html))
+        normalizeEditorBoldTagsInPlace(ref.current)
+        onChange(serializeNotesEditorElement(ref.current))
       }
     }
   }
@@ -247,12 +244,12 @@ function LinedNotesArea({
         aria-multiline
         data-placeholder={placeholder}
         onInput={(e) =>
-          onChange(serializeNotesEditorHtml(e.currentTarget.innerHTML))
+          onChange(serializeNotesEditorElement(e.currentTarget))
         }
         onPaste={(e) => {
           if (!pastePlainTextFromClipboard(e)) return
           if (ref.current) {
-            onChange(serializeNotesEditorHtml(ref.current.innerHTML))
+            onChange(serializeNotesEditorElement(ref.current))
           }
         }}
         onKeyDown={handleKeyDown}
