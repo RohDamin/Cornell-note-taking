@@ -140,7 +140,6 @@ export default function App() {
       setSaveStatus('saved')
       setSaveMessage(null)
       if (data) {
-        setCurrentNote(data)
         setNotesByChapter((prev) => {
           const list = prev[data.chapter_id!] ?? []
           const idx = list.findIndex((n) => n.id === data.id)

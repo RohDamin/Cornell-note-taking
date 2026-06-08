@@ -10,7 +10,6 @@ import {
 import {
   isNotesContentEmpty,
   normalizeEditorBoldTags,
-  notesContentMatchesEditor,
   notesContentToDisplayHtml,
   serializeNotesEditorHtml,
   setNotesEditorContent,
@@ -189,9 +188,9 @@ function LinedNotesArea({
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    if (notesContentMatchesEditor(el.innerHTML, value)) return
     setNotesEditorContent(el, value)
-  }, [syncKey, value])
+    // Reload editor content only when switching notes/pages — not on every autosave.
+  }, [syncKey])
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
