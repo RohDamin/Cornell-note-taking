@@ -1,4 +1,13 @@
-import type { Note } from '../types/note'
+import type { Note, NotePageContent } from '../types/note'
+import { isNotesContentEmpty } from './notesContent'
+
+export function isNotePageEmpty(page: NotePageContent): boolean {
+  return (
+    !page.keyword_content?.trim() &&
+    isNotesContentEmpty(page.notes_content ?? '') &&
+    !page.summary_content?.trim()
+  )
+}
 
 export interface PrintSheet {
   note: Note

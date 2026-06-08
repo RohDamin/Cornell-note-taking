@@ -9,7 +9,9 @@ import {
 } from '../utils/boundedText'
 import {
   isNotesContentEmpty,
-  sanitizeNotesHtml,
+  notesContentMatchesEditor,
+  notesHtmlForDisplay,
+  serializeNotesEditorHtml,
   setNotesEditorContent,
 } from '../utils/notesContent'
 
@@ -25,6 +27,7 @@ interface NoteEditorProps {
     field: NoteField | NotePageField,
     value: string,
   ) => void
+  onRemovePage?: () => void
 }
 
 function PlainEditable({
@@ -159,15 +162,25 @@ function LinedNotesArea({
   useEffect(() => {
     const el = ref.current
     if (!el) return
+    if (notesContentMatchesEditor(el.innerHTML, value)) return
     setNotesEditorContent(el, value)
-  }, [syncKey])
+  }, [syncKey, value])
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      document.execCommand('insertLineBreak')
+      if (ref.current) {
+        onChange(serializeNotesEditorHtml(ref.current.innerHTML))
+      }
+      return
+    }
+
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
       e.preventDefault()
       document.execCommand('bold')
       if (ref.current) {
-        onChange(sanitizeNotesHtml(ref.current.innerHTML))
+        onChange(serializeNotesEditorHtml(ref.current.innerHTML))
       }
     }
   }
@@ -185,7 +198,7 @@ function LinedNotesArea({
           <div
             className="lined-notes-input text-xs text-slate-600"
             dangerouslySetInnerHTML={{
-              __html: sanitizeNotesHtml(value),
+              __html: notesHtmlForDisplay(value),
             }}
           />
         ) : (
@@ -208,7 +221,7 @@ function LinedNotesArea({
         aria-multiline
         data-placeholder={placeholder}
         onInput={(e) =>
-          onChange(sanitizeNotesHtml(e.currentTarget.innerHTML))
+          onChange(serializeNotesEditorHtml(e.currentTarget.innerHTML))
         }
         onKeyDown={handleKeyDown}
         className="lined-notes-input editable-field min-h-full w-full flex-1 text-xs text-slate-800 outline-none"
@@ -225,6 +238,7 @@ export default function NoteEditor({
   continuationLayout = false,
   pageNumber,
   onFieldChange,
+  onRemovePage,
 }: NoteEditorProps) {
   const isContinuation = continuationLayout || pageIndex > 0
   const extraPage = !continuationLayout && pageIndex > 0
@@ -291,8 +305,19 @@ export default function NoteEditor({
       )}
 
       {isContinuation && displayPageNumber != null && (
-        <div className="note-pad-inset shrink-0 pt-8 pb-4 text-right text-[10px] font-medium tracking-wide text-slate-400 uppercase">
-          Page {displayPageNumber}
+        <div className="note-pad-inset flex shrink-0 items-center justify-between gap-3 pt-8 pb-4">
+          <span className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">
+            Page {displayPageNumber}
+          </span>
+          {onRemovePage && (
+            <button
+              type="button"
+              onClick={onRemovePage}
+              className="note-remove-page-btn"
+            >
+              Remove page
+            </button>
+          )}
         </div>
       )}
 

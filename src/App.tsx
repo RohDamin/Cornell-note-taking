@@ -19,6 +19,7 @@ import {
   type NotePageField,
 } from './types/note'
 import type { Chapter } from './types/chapter'
+import { isNotePageEmpty } from './utils/notePages'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -211,6 +212,27 @@ export default function App() {
           behavior: 'smooth',
         })
       })
+    })
+  }
+
+  const handleRemovePage = (pageIndex: number) => {
+    if (readOnly || pageIndex <= 0) return
+
+    const extraIndex = pageIndex - 1
+    const page = currentNoteRef.current.extra_pages?.[extraIndex]
+    if (page && !isNotePageEmpty(page)) {
+      const confirmed = window.confirm(
+        'Delete this page? Its content cannot be recovered.',
+      )
+      if (!confirmed) return
+    }
+
+    setCurrentNote((prev) => {
+      const pages = [...(prev.extra_pages ?? [])]
+      pages.splice(extraIndex, 1)
+      const updated: Note = { ...prev, extra_pages: pages }
+      scheduleAutoSave(updated)
+      return updated
     })
   }
 
@@ -449,10 +471,15 @@ export default function App() {
                   readOnly={readOnly}
                   pageIndex={pageIndex}
                   onFieldChange={handlePageFieldChange}
+                  onRemovePage={
+                    pageIndex > 0 && !readOnly
+                      ? () => handleRemovePage(pageIndex)
+                      : undefined
+                  }
                 />
               </div>
             ))}
-            {!readOnly && currentNote.chapter_id && (
+            {!readOnly && (
               <div className="note-add-page-wrap">
                 <button
                   type="button"
