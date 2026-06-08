@@ -9,8 +9,9 @@ import {
 } from '../utils/boundedText'
 import {
   isNotesContentEmpty,
+  normalizeEditorBoldTags,
   notesContentMatchesEditor,
-  notesHtmlForDisplay,
+  notesContentToDisplayHtml,
   serializeNotesEditorHtml,
   setNotesEditorContent,
 } from '../utils/notesContent'
@@ -206,7 +207,11 @@ function LinedNotesArea({
       e.preventDefault()
       document.execCommand('bold')
       if (ref.current) {
-        onChange(serializeNotesEditorHtml(ref.current.innerHTML))
+        const html = normalizeEditorBoldTags(ref.current.innerHTML)
+        if (html !== ref.current.innerHTML) {
+          ref.current.innerHTML = html
+        }
+        onChange(serializeNotesEditorHtml(html))
       }
     }
   }
@@ -220,17 +225,13 @@ function LinedNotesArea({
           <div className="lined-notes-input text-xs text-slate-300">
             {placeholder}
           </div>
-        ) : value.includes('<') ? (
+        ) : (
           <div
             className="lined-notes-input text-xs text-slate-600"
             dangerouslySetInnerHTML={{
-              __html: notesHtmlForDisplay(value),
+              __html: notesContentToDisplayHtml(value),
             }}
           />
-        ) : (
-          <div className="lined-notes-input whitespace-pre-wrap text-xs text-slate-600">
-            {value}
-          </div>
         )}
       </div>
     )

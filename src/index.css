@@ -201,7 +201,6 @@ body {
   padding-left: 1.5rem;
   box-sizing: border-box;
   line-height: var(--note-line-step);
-  white-space: pre-wrap;
   word-break: break-word;
   background-color: transparent;
 }
@@ -217,12 +216,11 @@ body {
   pointer-events: none;
 }
 
-/* Strip external paste styling; keep only intentional in-app bold. */
-.editable-field *,
-.lined-notes-input * {
+/* Strip external paste styling; keep Ctrl+B bold intact. */
+.editable-field *:not(b):not(strong),
+.lined-notes-input *:not(b):not(strong) {
   font-family: inherit !important;
   font-size: inherit !important;
-  font-weight: inherit !important;
   font-style: normal !important;
   line-height: inherit !important;
   letter-spacing: inherit !important;
