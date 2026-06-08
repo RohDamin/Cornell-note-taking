@@ -217,6 +217,25 @@ body {
   pointer-events: none;
 }
 
+/* Strip external paste styling; keep only intentional in-app bold. */
+.editable-field *,
+.lined-notes-input * {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  font-style: normal !important;
+  line-height: inherit !important;
+  letter-spacing: inherit !important;
+  color: inherit !important;
+  background: transparent !important;
+  text-decoration: none !important;
+}
+
+.lined-notes-input b,
+.lined-notes-input strong {
+  font-weight: 700 !important;
+}
+
 /* 챕터 PDF 출력용 (화면에서는 숨김) */
 .chapter-print-root {
   display: none;

@@ -1,4 +1,4 @@
-import { useRef, useEffect, type KeyboardEvent } from 'react'
+import { useRef, useEffect, type ClipboardEvent, type KeyboardEvent } from 'react'
 import NoteRulesLayer from './NoteRulesLayer'
 import type { Note, NoteField, NotePageField } from '../types/note'
 import {
@@ -14,6 +14,10 @@ import {
   serializeNotesEditorHtml,
   setNotesEditorContent,
 } from '../utils/notesContent'
+import {
+  mergePlainTextPaste,
+  pastePlainTextFromClipboard,
+} from '../utils/pastePlainText'
 
 interface NoteEditorProps {
   note: Note
@@ -85,6 +89,11 @@ function PlainEditable({
       aria-readonly={readOnly}
       data-placeholder={placeholder}
       onInput={(e) => handleInput(e.currentTarget)}
+      onPaste={(e) => {
+        if (readOnly) return
+        if (!pastePlainTextFromClipboard(e)) return
+        if (ref.current) handleInput(ref.current)
+      }}
       className={`editable-field note-bounded-field outline-none ${readOnly ? 'cursor-default text-slate-600' : ''} ${className}`}
     />
   )
@@ -129,12 +138,29 @@ function BoundedSummaryField({
     onChange(clamped)
   }
 
+  const handlePaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    if (readOnly) return
+    const pasted = e.clipboardData?.getData('text/plain')
+    if (pasted == null) return
+
+    e.preventDefault()
+    const el = e.currentTarget
+    const start = el.selectionStart ?? 0
+    const end = el.selectionEnd ?? 0
+    handleChange(mergePlainTextPaste(value, pasted, start, end))
+    requestAnimationFrame(() => {
+      const pos = start + pasted.length
+      el.setSelectionRange(pos, pos)
+    })
+  }
+
   return (
     <textarea
       ref={ref}
       value={value}
       readOnly={readOnly}
       onChange={(e) => handleChange(e.target.value)}
+      onPaste={handlePaste}
       placeholder={placeholder}
       rows={5}
       className={`note-bounded-field note-summary-input h-[5.5rem] max-h-[5.5rem] w-full resize-none overflow-hidden border-0 bg-transparent text-xs leading-relaxed placeholder:text-slate-300 focus:outline-none focus:ring-0 ${readOnly ? 'cursor-default text-slate-600' : 'text-slate-800'}`}
@@ -223,6 +249,12 @@ function LinedNotesArea({
         onInput={(e) =>
           onChange(serializeNotesEditorHtml(e.currentTarget.innerHTML))
         }
+        onPaste={(e) => {
+          if (!pastePlainTextFromClipboard(e)) return
+          if (ref.current) {
+            onChange(serializeNotesEditorHtml(ref.current.innerHTML))
+          }
+        }}
         onKeyDown={handleKeyDown}
         className="lined-notes-input editable-field min-h-full w-full flex-1 text-xs text-slate-800 outline-none"
       />
