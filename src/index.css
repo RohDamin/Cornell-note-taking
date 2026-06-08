@@ -57,6 +57,37 @@ body {
     height: max(0px, calc(297mm * (var(--pad-scale) - 1)));
     flex-shrink: 0;
   }
+
+  .note-page-stack-item {
+    margin-top: 1.5rem;
+  }
+
+  .note-add-page-wrap {
+    width: 210mm;
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+    transform: scale(var(--pad-scale));
+    transform-origin: top center;
+  }
+
+  .note-add-page-btn {
+    padding: 0.625rem 1.25rem;
+    border: 1px dashed #cbd5e1;
+    border-radius: 0.5rem;
+    background: white;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+  }
+
+  .note-add-page-btn:hover {
+    border-color: #94a3b8;
+    color: #1e293b;
+    background: #f8fafc;
+  }
 }
 
 .a4-pad,

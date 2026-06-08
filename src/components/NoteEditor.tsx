@@ -1,6 +1,6 @@
 import { useRef, useEffect, type KeyboardEvent } from 'react'
 import NoteRulesLayer from './NoteRulesLayer'
-import type { Note, NoteField } from '../types/note'
+import type { Note, NoteField, NotePageField } from '../types/note'
 import {
   clampInnerTextToBox,
   fitsInBox,
@@ -17,7 +17,14 @@ interface NoteEditorProps {
   note: Note
   readOnly: boolean
   forPrint?: boolean
-  onFieldChange: (field: NoteField, value: string) => void
+  pageIndex?: number
+  continuationLayout?: boolean
+  pageNumber?: number
+  onFieldChange: (
+    pageIndex: number,
+    field: NoteField | NotePageField,
+    value: string,
+  ) => void
 }
 
 function PlainEditable({
@@ -214,44 +221,80 @@ export default function NoteEditor({
   note,
   readOnly,
   forPrint = false,
+  pageIndex = 0,
+  continuationLayout = false,
+  pageNumber,
   onFieldChange,
 }: NoteEditorProps) {
-  const mainTitle = note.main_title ?? ''
-  const subTitle = note.sub_title ?? ''
-  const keywords = note.keyword_content ?? ''
-  const body = note.notes_content ?? ''
-  const summary = note.summary_content ?? ''
+  const isContinuation = continuationLayout || pageIndex > 0
+  const extraPage = !continuationLayout && pageIndex > 0
+    ? note.extra_pages?.[pageIndex - 1]
+    : null
+
+  const mainTitle = isContinuation ? '' : (note.main_title ?? '')
+  const subTitle = isContinuation ? '' : (note.sub_title ?? '')
+  const keywords = continuationLayout
+    ? (note.keyword_content ?? '')
+    : isContinuation
+      ? (extraPage?.keyword_content ?? '')
+      : (note.keyword_content ?? '')
+  const body = continuationLayout
+    ? (note.notes_content ?? '')
+    : isContinuation
+      ? (extraPage?.notes_content ?? '')
+      : (note.notes_content ?? '')
+  const summary = continuationLayout
+    ? (note.summary_content ?? '')
+    : isContinuation
+      ? (extraPage?.summary_content ?? '')
+      : (note.summary_content ?? '')
+
+  const syncKey = `${note.id}-${pageIndex}${continuationLayout ? '-print' : ''}`
+  const changeField = (field: NoteField | NotePageField, value: string) => {
+    onFieldChange(pageIndex, field, value)
+  }
 
   const titleClass = readOnly ? 'cursor-default text-slate-600' : 'text-slate-900'
+  const displayPageNumber = pageNumber ?? (pageIndex > 0 ? pageIndex + 1 : null)
 
   return (
     <article
-      id={forPrint ? undefined : 'note-pad'}
+      id={forPrint || pageIndex > 0 ? undefined : 'note-pad'}
       className={`note-pad a4-pad mx-auto flex flex-col bg-white shadow-xl ${readOnly && !forPrint ? 'opacity-95' : ''}`}
     >
-      {readOnly && !forPrint && (
+      {readOnly && !forPrint && pageIndex === 0 && (
         <div className="note-pad-inset shrink-0 bg-amber-50 py-1.5 text-center text-[10px] text-amber-700">
           Read-only — you cannot edit this note
         </div>
       )}
 
-      <input
-        type="text"
-        value={mainTitle}
-        readOnly={readOnly}
-        onChange={(e) => onFieldChange('main_title', e.target.value)}
-        placeholder="01. Enter a title"
-        className={`note-pad-inset shrink-0 border-0 bg-transparent pt-8 text-2xl font-bold tracking-tight placeholder:text-slate-300 focus:outline-none focus:ring-0 ${titleClass}`}
-      />
+      {!isContinuation && (
+        <>
+          <input
+            type="text"
+            value={mainTitle}
+            readOnly={readOnly}
+            onChange={(e) => changeField('main_title', e.target.value)}
+            placeholder="01. Enter a title"
+            className={`note-pad-inset shrink-0 border-0 bg-transparent pt-8 text-2xl font-bold tracking-tight placeholder:text-slate-300 focus:outline-none focus:ring-0 ${titleClass}`}
+          />
 
-      <input
-        type="text"
-        value={subTitle}
-        readOnly={readOnly}
-        onChange={(e) => onFieldChange('sub_title', e.target.value)}
-        placeholder="Enter a subtitle"
-        className={`note-pad-inset mt-4 shrink-0 border-0 bg-transparent pb-4 text-base font-bold placeholder:text-slate-300 focus:outline-none focus:ring-0 ${readOnly ? 'text-slate-600' : 'text-slate-600'}`}
-      />
+          <input
+            type="text"
+            value={subTitle}
+            readOnly={readOnly}
+            onChange={(e) => changeField('sub_title', e.target.value)}
+            placeholder="Enter a subtitle"
+            className={`note-pad-inset mt-4 shrink-0 border-0 bg-transparent pb-4 text-base font-bold placeholder:text-slate-300 focus:outline-none focus:ring-0 ${readOnly ? 'text-slate-600' : 'text-slate-600'}`}
+          />
+        </>
+      )}
+
+      {isContinuation && displayPageNumber != null && (
+        <div className="note-pad-inset shrink-0 pt-8 pb-4 text-right text-[10px] font-medium tracking-wide text-slate-400 uppercase">
+          Page {displayPageNumber}
+        </div>
+      )}
 
       <div className="note-body-section flex min-h-0 flex-1 border-t border-slate-200">
         <section className="note-keyword-column note-pad-inset flex w-[25%] min-h-0 flex-col overflow-hidden border-r border-slate-200 py-3">
@@ -262,10 +305,10 @@ export default function NoteEditor({
           ) : (
             <PlainEditable
               value={keywords}
-              onChange={(v) => onFieldChange('keyword_content', v)}
+              onChange={(v) => changeField('keyword_content', v)}
               placeholder="Keywords"
               readOnly={false}
-              syncKey={note.id}
+              syncKey={syncKey}
               clampToBounds
               className="min-h-0 flex-1 text-xs leading-relaxed text-slate-800"
             />
@@ -275,10 +318,10 @@ export default function NoteEditor({
         <section className="note-pad-inset-right notes-column flex min-h-0 w-[75%] flex-col overflow-hidden py-3">
           <LinedNotesArea
             value={body}
-            onChange={(v) => onFieldChange('notes_content', v)}
+            onChange={(v) => changeField('notes_content', v)}
             placeholder="Enter your notes"
             readOnly={readOnly}
-            syncKey={note.id}
+            syncKey={syncKey}
             className="min-h-0 w-full flex-1"
           />
         </section>
@@ -294,10 +337,10 @@ export default function NoteEditor({
         ) : (
           <BoundedSummaryField
             value={summary}
-            onChange={(v) => onFieldChange('summary_content', v)}
+            onChange={(v) => changeField('summary_content', v)}
             placeholder="Write a summary"
             readOnly={false}
-            syncKey={note.id}
+            syncKey={syncKey}
           />
         )}
       </footer>

@@ -9,8 +9,11 @@ interface LoginModalProps {
   open: boolean
   initialTab?: AuthModalTab
   forceResetView?: boolean
+  forceForgotView?: boolean
+  initialError?: string | null
   onClose: () => void
   onDismissRecovery?: () => void
+  onDismissCallbackError?: () => void
   onSignIn: (email: string, password: string) => Promise<{ error: string | null }>
   onSignUp: (
     email: string,
@@ -28,8 +31,11 @@ export default function LoginModal({
   open,
   initialTab = 'login',
   forceResetView = false,
+  forceForgotView = false,
+  initialError = null,
   onClose,
   onDismissRecovery,
+  onDismissCallbackError,
   onSignIn,
   onSignUp,
   onRequestPasswordReset,
@@ -66,17 +72,30 @@ export default function LoginModal({
     if (!open) return
     if (forceResetView) {
       setView('reset')
+    } else if (forceForgotView) {
+      setView('forgot')
     } else {
       setView(initialTab)
     }
     resetFormFields()
-  }, [open, initialTab, forceResetView])
+    if (initialError) {
+      setError(initialError)
+    }
+  }, [open, initialTab, forceResetView, forceForgotView, initialError])
 
   useEffect(() => {
     if (forceResetView) {
       setView('reset')
+    } else if (forceForgotView) {
+      setView('forgot')
     }
-  }, [forceResetView])
+  }, [forceResetView, forceForgotView])
+
+  useEffect(() => {
+    if (open && initialError) {
+      setError(initialError)
+    }
+  }, [open, initialError])
 
   if (!open) return null
 
@@ -84,6 +103,9 @@ export default function LoginModal({
     resetFormFields()
     if (forceResetView) {
       onDismissRecovery?.()
+    }
+    if (forceForgotView) {
+      onDismissCallbackError?.()
     }
     onClose()
   }
@@ -101,6 +123,7 @@ export default function LoginModal({
         setError(result.error)
         return
       }
+      onDismissCallbackError?.()
       alert('A password reset email has been sent.')
       setView('login')
       return

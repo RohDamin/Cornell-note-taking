@@ -15,8 +15,12 @@ create table if not exists public.notes (
   sub_title text,
   keyword_content text,
   notes_content text,
-  summary_content text
+  summary_content text,
+  extra_pages jsonb not null default '[]'::jsonb
 );
+
+-- 기존 DB에 extra_pages 컬럼이 없다면:
+-- alter table public.notes add column if not exists extra_pages jsonb not null default '[]'::jsonb;
 
 alter table public.chapters enable row level security;
 alter table public.notes enable row level security;

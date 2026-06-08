@@ -1,3 +1,9 @@
+export interface NotePageContent {
+  keyword_content: string | null
+  notes_content: string | null
+  summary_content: string | null
+}
+
 export interface Note {
   id: string
   chapter_id: string | null
@@ -7,9 +13,15 @@ export interface Note {
   keyword_content: string | null
   notes_content: string | null
   summary_content: string | null
+  extra_pages: NotePageContent[] | null
 }
 
-export type NoteField = keyof Omit<Note, 'id' | 'chapter_id' | 'user_id'>
+export type NoteField = keyof Omit<
+  Note,
+  'id' | 'chapter_id' | 'user_id' | 'extra_pages'
+>
+
+export type NotePageField = keyof NotePageContent
 
 export function createEmptyNote(
   chapterId: string | null = null,
@@ -24,6 +36,26 @@ export function createEmptyNote(
     keyword_content: '',
     notes_content: '',
     summary_content: '',
+    extra_pages: [],
+  }
+}
+
+export function createEmptyPageContent(): NotePageContent {
+  return {
+    keyword_content: '',
+    notes_content: '',
+    summary_content: '',
+  }
+}
+
+export function getNotePageCount(note: Note): number {
+  return 1 + (note.extra_pages?.length ?? 0)
+}
+
+export function normalizeNote(note: Note): Note {
+  return {
+    ...note,
+    extra_pages: note.extra_pages ?? [],
   }
 }
 

@@ -11,6 +11,7 @@ import {
 import { supabase } from '../lib/supabaseClient.js'
 import {
   clearAuthHashFromUrl,
+  getAuthHashError,
   isPasswordRecoveryUrl,
   requestPasswordReset,
   signInWithEmail,
@@ -27,6 +28,7 @@ interface AuthContextValue {
   isLoggedIn: boolean
   loading: boolean
   needsPasswordReset: boolean
+  authCallbackError: string | null
   signUp: (
     email: string,
     password: string,
@@ -37,6 +39,7 @@ interface AuthContextValue {
   ) => Promise<{ error: string | null }>
   updatePassword: (password: string) => Promise<{ error: string | null }>
   dismissPasswordRecovery: () => void
+  dismissAuthCallbackError: () => void
   logout: () => Promise<void>
 }
 
@@ -49,8 +52,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [needsPasswordReset, setNeedsPasswordReset] = useState(
     () => isPasswordRecoveryUrl(),
   )
+  const [authCallbackError, setAuthCallbackError] = useState<string | null>(
+    () => getAuthHashError(),
+  )
 
   useEffect(() => {
+    const hashError = getAuthHashError()
+    if (hashError) {
+      setAuthCallbackError(hashError)
+      clearAuthHashFromUrl()
+    }
+
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setUser(data.session?.user ?? null)
@@ -106,6 +118,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearAuthHashFromUrl()
   }, [])
 
+  const dismissAuthCallbackError = useCallback(() => {
+    setAuthCallbackError(null)
+    clearAuthHashFromUrl()
+  }, [])
+
   const logout = useCallback(async () => {
     await signOut()
   }, [])
@@ -119,11 +136,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoggedIn: !!user,
       loading,
       needsPasswordReset,
+      authCallbackError,
       signUp,
       signIn,
       requestPasswordResetEmail,
       updatePassword,
       dismissPasswordRecovery,
+      dismissAuthCallbackError,
       logout,
     }),
     [
@@ -131,11 +150,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       loading,
       needsPasswordReset,
+      authCallbackError,
       signUp,
       signIn,
       requestPasswordResetEmail,
       updatePassword,
       dismissPasswordRecovery,
+      dismissAuthCallbackError,
       logout,
     ],
   )

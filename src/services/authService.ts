@@ -52,11 +52,31 @@ function signInErrorMessage(error: AuthError): string {
   return error.message
 }
 
-export function isPasswordRecoveryUrl(): boolean {
-  if (typeof window === 'undefined') return false
+function getAuthHashParams(): URLSearchParams | null {
+  if (typeof window === 'undefined') return null
   const hash = window.location.hash.replace(/^#/, '')
-  if (!hash) return false
-  return new URLSearchParams(hash).get('type') === 'recovery'
+  if (!hash) return null
+  return new URLSearchParams(hash)
+}
+
+export function isPasswordRecoveryUrl(): boolean {
+  return getAuthHashParams()?.get('type') === 'recovery'
+}
+
+export function getAuthHashError(): string | null {
+  const params = getAuthHashParams()
+  if (!params?.get('error')) return null
+
+  const errorCode = params.get('error_code')
+  const description = params.get('error_description')?.replace(/\+/g, ' ')
+
+  if (errorCode === 'otp_expired') {
+    return 'This password reset link has expired. Please request a new one below.'
+  }
+  if (errorCode === 'email_not_confirmed') {
+    return 'Please confirm your email first, then try resetting your password again.'
+  }
+  return description ?? 'Authentication link is invalid. Please try again.'
 }
 
 export function clearAuthHashFromUrl(): void {

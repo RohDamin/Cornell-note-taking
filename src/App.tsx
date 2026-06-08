@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ChapterPrintView from './components/ChapterPrintView'
 import ContactLink from './components/ContactLink'
+import SeoLanding from './components/SeoLanding'
 import LoginModal, { type AuthModalTab } from './components/LoginModal'
 import NoteEditor from './components/NoteEditor'
 import NoteSidebar from './components/NoteSidebar'
@@ -10,9 +11,13 @@ import { createChapter, fetchChapters } from './services/chapterService'
 import { fetchNotesByChapter, upsertNote } from './services/noteService'
 import {
   createEmptyNote,
+  createEmptyPageContent,
+  getNotePageCount,
   isNoteEditable,
+  normalizeNote,
   type Note,
   type NoteField,
+  type NotePageField,
 } from './types/note'
 import type { Chapter } from './types/chapter'
 
@@ -28,9 +33,11 @@ export default function App() {
     signUp,
     logout,
     needsPasswordReset,
+    authCallbackError,
     requestPasswordResetEmail,
     updatePassword,
     dismissPasswordRecovery,
+    dismissAuthCallbackError,
   } = useAuth()
 
   const [authOpen, setAuthOpen] = useState(false)
@@ -63,10 +70,10 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (needsPasswordReset) {
+    if (needsPasswordReset || authCallbackError) {
       setAuthOpen(true)
     }
-  }, [needsPasswordReset])
+  }, [needsPasswordReset, authCallbackError])
 
   const loadChapters = useCallback(async () => {
     if (!userId) return
@@ -114,8 +121,6 @@ export default function App() {
       }
 
       if (!note.chapter_id) {
-        setSaveStatus('error')
-        setSaveMessage('You can only save notes that belong to a chapter.')
         return
       }
 
@@ -153,19 +158,60 @@ export default function App() {
 
   const scheduleAutoSave = useCallback(
     (note: Note) => {
-      if (!isLoggedIn || readOnly) return
+      if (!isLoggedIn || readOnly || !note.chapter_id) return
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => persistNote(note), 2000)
     },
     [isLoggedIn, readOnly, persistNote],
   )
 
-  const handleFieldChange = (field: NoteField, value: string) => {
+  const handlePageFieldChange = (
+    pageIndex: number,
+    field: NoteField | NotePageField,
+    value: string,
+  ) => {
     if (readOnly) return
     setCurrentNote((prev) => {
-      const updated = { ...prev, [field]: value }
+      let updated: Note
+      if (pageIndex === 0) {
+        updated = { ...prev, [field]: value }
+      } else {
+        const pages = [...(prev.extra_pages ?? [])]
+        while (pages.length < pageIndex) {
+          pages.push(createEmptyPageContent())
+        }
+        const page = { ...pages[pageIndex - 1], [field]: value }
+        pages[pageIndex - 1] = page
+        updated = { ...prev, extra_pages: pages }
+      }
       scheduleAutoSave(updated)
       return updated
+    })
+  }
+
+  const handleAddPage = () => {
+    if (readOnly) return
+    if (!currentNoteRef.current.chapter_id) {
+      alert(
+        'Select a note from a chapter first. Use "Add Note" in the sidebar, or create a chapter.',
+      )
+      return
+    }
+    setCurrentNote((prev) => {
+      const updated: Note = {
+        ...prev,
+        extra_pages: [...(prev.extra_pages ?? []), createEmptyPageContent()],
+      }
+      scheduleAutoSave(updated)
+      return updated
+    })
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        noteScrollRef.current?.scrollTo({
+          top: noteScrollRef.current.scrollHeight,
+          behavior: 'smooth',
+        })
+      })
     })
   }
 
@@ -173,6 +219,13 @@ export default function App() {
     if (!isLoggedIn) {
       alert('You need to sign up to use this feature.')
       openAuthModal('signup')
+      return
+    }
+    if (!currentNoteRef.current.chapter_id) {
+      setSaveStatus('error')
+      setSaveMessage(
+        'Create or select a note from a chapter in the sidebar before saving.',
+      )
       return
     }
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -206,7 +259,11 @@ export default function App() {
         [...prev, data].sort((a, b) => a.name.localeCompare(b.name, 'ko')),
       )
       setExpandedChapterIds((prev) => new Set(prev).add(data.id))
-      setNotesByChapter((prev) => ({ ...prev, [data.id]: [] }))
+      const note = createEmptyNote(data.id, userId)
+      setNotesByChapter((prev) => ({ ...prev, [data.id]: [note] }))
+      setCurrentNote(note)
+      setSaveStatus('idle')
+      setSaveMessage(null)
     }
   }
 
@@ -214,15 +271,21 @@ export default function App() {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     const note = createEmptyNote(chapterId, userId)
     setCurrentNote(note)
+    setNotesByChapter((prev) => ({
+      ...prev,
+      [chapterId]: [...(prev[chapterId] ?? []), note],
+    }))
     setSaveStatus('idle')
     setSaveMessage(null)
+    noteScrollRef.current?.scrollTo({ top: 0 })
   }
 
   const handleSelectNote = (note: Note) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    setCurrentNote(note)
+    setCurrentNote(normalizeNote(note))
     setSaveStatus('idle')
     setSaveMessage(null)
+    noteScrollRef.current?.scrollTo({ top: 0 })
   }
 
   const handleLogout = async () => {
@@ -263,8 +326,7 @@ export default function App() {
 
     const ro = new ResizeObserver(syncContactVisibility)
     ro.observe(scroll)
-    const pad = scroll.querySelector('.a4-pad-wrapper')
-    if (pad) ro.observe(pad)
+    scroll.querySelectorAll('.a4-pad-wrapper').forEach((pad) => ro.observe(pad))
 
     return () => {
       ro.disconnect()
@@ -319,6 +381,8 @@ export default function App() {
     })
   }, [isLoggedIn, userId, buildChapterPrintNotes])
 
+  const pageCount = getNotePageCount(currentNote)
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-100 text-sm text-slate-500">
@@ -342,11 +406,14 @@ export default function App() {
       />
 
       <LoginModal
-        open={authOpen || needsPasswordReset}
+        open={authOpen || needsPasswordReset || !!authCallbackError}
         initialTab={authTab}
         forceResetView={needsPasswordReset}
+        forceForgotView={!!authCallbackError}
+        initialError={authCallbackError}
         onClose={() => setAuthOpen(false)}
         onDismissRecovery={dismissPasswordRecovery}
+        onDismissCallbackError={dismissAuthCallbackError}
         onSignIn={signIn}
         onSignUp={signUp}
         onRequestPasswordReset={requestPasswordResetEmail}
@@ -373,14 +440,31 @@ export default function App() {
             onScroll={syncContactVisibility}
             className="note-scroll-panel flex flex-1 flex-col items-center overflow-y-auto px-4 pb-6 pt-6"
           >
-            <div className="a4-pad-wrapper">
-              <NoteEditor
-                key={`${currentNote.id}-${readOnly}`}
-                note={currentNote}
-                readOnly={readOnly}
-                onFieldChange={handleFieldChange}
-              />
-            </div>
+            {Array.from({ length: pageCount }, (_, pageIndex) => (
+              <div
+                key={`${currentNote.id}-page-${pageIndex}`}
+                className={`a4-pad-wrapper ${pageIndex > 0 ? 'note-page-stack-item' : ''}`}
+              >
+                <NoteEditor
+                  note={currentNote}
+                  readOnly={readOnly}
+                  pageIndex={pageIndex}
+                  onFieldChange={handlePageFieldChange}
+                />
+              </div>
+            ))}
+            {!readOnly && currentNote.chapter_id && (
+              <div className="note-add-page-wrap">
+                <button
+                  type="button"
+                  onClick={handleAddPage}
+                  className="note-add-page-btn"
+                >
+                  + Add page
+                </button>
+              </div>
+            )}
+            <SeoLanding onSignUpClick={() => openAuthModal('signup')} />
             <div className="note-pad-scroll-spacer" aria-hidden />
           </div>
           {showContact && <ContactLink />}
