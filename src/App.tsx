@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ChapterPrintView from './components/ChapterPrintView'
 import ContactLink from './components/ContactLink'
-import SeoLanding from './components/SeoLanding'
 import LoginModal, { type AuthModalTab } from './components/LoginModal'
 import NoteEditor from './components/NoteEditor'
 import NoteSidebar from './components/NoteSidebar'
@@ -464,7 +463,6 @@ export default function App() {
                 </button>
               </div>
             )}
-            <SeoLanding onSignUpClick={() => openAuthModal('signup')} />
             <div className="note-pad-scroll-spacer" aria-hidden />
           </div>
           {showContact && <ContactLink />}
