@@ -21,6 +21,7 @@ import {
 } from '../utils/notesContent'
 import {
   mergePlainTextPaste,
+  pasteNotesContentFromClipboard,
   pastePlainTextFromClipboard,
 } from '../utils/pastePlainText'
 
@@ -252,8 +253,9 @@ function LinedNotesArea({
           onChange(serializeNotesEditorElement(e.currentTarget))
         }
         onPaste={(e) => {
-          if (!pastePlainTextFromClipboard(e)) return
+          if (!pasteNotesContentFromClipboard(e)) return
           if (ref.current) {
+            normalizeEditorBoldTagsInPlace(ref.current)
             onChange(serializeNotesEditorElement(ref.current))
           }
         }}

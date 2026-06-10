@@ -199,6 +199,23 @@ export function notesContentToDisplayHtml(value: string): string {
   return plainTextToEditorHtml(value.replace(/\r\n?/g, '\n'))
 }
 
+/** 외부 클립보드 HTML → b/strong/br만 남김 (색·폰트·크기 등 제거) */
+export function sanitizePastedNotesHtml(html: string): string {
+  if (!html.trim() || typeof document === 'undefined') return ''
+
+  const wrapper = document.createElement('div')
+  wrapper.innerHTML = html
+
+  const source = wrapper.querySelector('body') ?? wrapper
+  const root = document.createElement('div')
+  root.innerHTML = source.innerHTML
+
+  normalizeBoldSpansInElement(root)
+  collapseEmptyLineBlocksInPlace(root)
+
+  return sanitizeNotesHtml(normalizeBlockElementsToBrFromElement(root))
+}
+
 export function setNotesEditorContent(el: HTMLElement, value: string): void {
   if (!value) {
     el.innerHTML = ''
