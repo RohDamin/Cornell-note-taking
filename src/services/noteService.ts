@@ -8,6 +8,12 @@ function noteSaveErrorMessage(message: string): string {
       'Open Supabase → SQL Editor and run supabase/migrations/20250608_add_extra_pages.sql'
     )
   }
+  if (message.includes("'created_at'") || message.includes('created_at')) {
+    return (
+      'Database is missing the created_at column. ' +
+      'Open Supabase → SQL Editor and run supabase/migrations/20250608_add_note_created_at.sql'
+    )
+  }
   return message
 }
 
@@ -20,7 +26,7 @@ export async function fetchNotesByChapter(
     .select('*')
     .eq('chapter_id', chapterId)
     .eq('user_id', userId)
-    .order('main_title', { ascending: true })
+    .order('created_at', { ascending: true })
 
   if (error) return { data: [], error: noteSaveErrorMessage(error.message) }
   return {

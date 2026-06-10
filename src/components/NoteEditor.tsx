@@ -1,6 +1,11 @@
 import { useRef, useEffect, type ClipboardEvent, type KeyboardEvent } from 'react'
 import NoteRulesLayer from './NoteRulesLayer'
-import type { Note, NoteField, NotePageField } from '../types/note'
+import {
+  formatNoteCreatedAt,
+  type Note,
+  type NoteField,
+  type NotePageField,
+} from '../types/note'
 import {
   clampInnerTextToBox,
   fitsInBox,
@@ -299,6 +304,8 @@ export default function NoteEditor({
 
   const titleClass = readOnly ? 'cursor-default text-slate-600' : 'text-slate-900'
   const displayPageNumber = pageNumber ?? (pageIndex > 0 ? pageIndex + 1 : null)
+  const createdAtLabel =
+    pageIndex === 0 && !forPrint ? formatNoteCreatedAt(note.created_at) : null
 
   return (
     <article
@@ -313,13 +320,20 @@ export default function NoteEditor({
 
       {!isContinuation && (
         <>
+          {createdAtLabel && (
+            <p className="note-pad-inset shrink-0 pt-6 text-[10px] font-medium tracking-wide text-slate-400">
+              Created {createdAtLabel}
+            </p>
+          )}
           <input
             type="text"
             value={mainTitle}
             readOnly={readOnly}
             onChange={(e) => changeField('main_title', e.target.value)}
             placeholder="01. Enter a title"
-            className={`note-pad-inset shrink-0 border-0 bg-transparent pt-8 text-2xl font-bold tracking-tight placeholder:text-slate-300 focus:outline-none focus:ring-0 ${titleClass}`}
+            className={`note-pad-inset shrink-0 border-0 bg-transparent ${
+              createdAtLabel ? 'pt-2' : 'pt-8'
+            } text-2xl font-bold tracking-tight placeholder:text-slate-300 focus:outline-none focus:ring-0 ${titleClass}`}
           />
 
           <input

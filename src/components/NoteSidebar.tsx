@@ -13,6 +13,7 @@ interface NoteSidebarProps {
   onCreateChapter: (name: string) => void
   onCreateNote: (chapterId: string) => void
   onSelectNote: (note: Note) => void
+  onDeleteNote: (note: Note) => void
 }
 
 function displayTitle(note: Note): string {
@@ -30,6 +31,7 @@ export default function NoteSidebar({
   onCreateChapter,
   onCreateNote,
   onSelectNote,
+  onDeleteNote,
 }: NoteSidebarProps) {
   const [newChapterName, setNewChapterName] = useState('')
   const [showChapterInput, setShowChapterInput] = useState(false)
@@ -107,17 +109,33 @@ export default function NoteSidebar({
                       ) : (
                         <ul className="space-y-0.5">
                           {notes.map((note) => (
-                            <li key={note.id}>
+                            <li key={note.id} className="group flex items-center gap-0.5">
                               <button
                                 type="button"
                                 onClick={() => onSelectNote(note)}
-                                className={`w-full truncate rounded-md px-2 py-1.5 text-left text-[15px] transition ${
+                                className={`min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-left text-[15px] transition ${
                                   note.id === activeNoteId
                                     ? 'bg-white font-medium text-slate-900 shadow-sm'
                                     : 'text-slate-600 hover:bg-white/70'
                                 }`}
                               >
                                 {displayTitle(note)}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onDeleteNote(note)
+                                }}
+                                className={`shrink-0 rounded px-1.5 py-1 text-[13px] text-slate-400 transition hover:bg-red-50 hover:text-red-600 ${
+                                  note.id === activeNoteId
+                                    ? 'opacity-100'
+                                    : 'opacity-0 group-hover:opacity-100'
+                                }`}
+                                aria-label={`Delete ${displayTitle(note)}`}
+                                title="Delete note"
+                              >
+                                ×
                               </button>
                             </li>
                           ))}

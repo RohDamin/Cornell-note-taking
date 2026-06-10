@@ -7,12 +7,17 @@ import NoteSidebar from './components/NoteSidebar'
 import TopBar from './components/TopBar'
 import { useAuth } from './context/AuthContext'
 import { createChapter, fetchChapters } from './services/chapterService'
-import { fetchNotesByChapter, upsertNote } from './services/noteService'
+import {
+  deleteNote,
+  fetchNotesByChapter,
+  upsertNote,
+} from './services/noteService'
 import {
   createEmptyNote,
   createEmptyPageContent,
   getNotePageCount,
   isNoteEditable,
+  isNoteEffectivelyEmpty,
   normalizeNote,
   type Note,
   type NoteField,
@@ -308,6 +313,42 @@ export default function App() {
     noteScrollRef.current?.scrollTo({ top: 0 })
   }
 
+  const handleDeleteNote = async (note: Note) => {
+    if (!userId || !note.chapter_id) return
+
+    if (
+      !isNoteEffectivelyEmpty(note) &&
+      !window.confirm('Delete this note? This cannot be undone.')
+    ) {
+      return
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+
+    const { error } = await deleteNote(note.id, userId)
+    if (error) {
+      setSaveMessage(error)
+      return
+    }
+
+    const chapterId = note.chapter_id
+    const remaining = (notesByChapter[chapterId] ?? []).filter(
+      (n) => n.id !== note.id,
+    )
+    setNotesByChapter((prev) => ({ ...prev, [chapterId]: remaining }))
+
+    if (currentNoteRef.current.id !== note.id) return
+
+    if (remaining.length > 0) {
+      setCurrentNote(normalizeNote(remaining[0]))
+    } else {
+      setCurrentNote(createEmptyNote(chapterId, userId))
+    }
+    setSaveStatus('idle')
+    setSaveMessage(null)
+    noteScrollRef.current?.scrollTo({ top: 0 })
+  }
+
   const handleLogout = async () => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     await logout()
@@ -452,6 +493,7 @@ export default function App() {
           onCreateChapter={handleCreateChapter}
           onCreateNote={handleCreateNote}
           onSelectNote={handleSelectNote}
+          onDeleteNote={handleDeleteNote}
         />
 
         <div className="screen-only flex min-h-0 min-w-0 flex-1 flex-col">
