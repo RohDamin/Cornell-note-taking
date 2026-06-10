@@ -12,7 +12,7 @@ export default function ChapterPrintView({ notes }: ChapterPrintViewProps) {
 
   return (
     <div id="chapter-print-root" className="chapter-print-root">
-      {sheets.map(({ note, pageNumber, continuationLayout }, index) => (
+      {sheets.map(({ note, pageNumber, totalPages, continuationLayout }, index) => (
         <div
           key={note.id}
           className={`print-note-sheet ${index < sheets.length - 1 ? 'print-note-sheet--break' : ''}`}
@@ -24,6 +24,7 @@ export default function ChapterPrintView({ notes }: ChapterPrintViewProps) {
               forPrint
               continuationLayout={continuationLayout}
               pageNumber={pageNumber}
+              totalPages={totalPages}
               onFieldChange={() => {}}
             />
           </div>

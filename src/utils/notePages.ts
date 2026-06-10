@@ -12,13 +12,17 @@ export function isNotePageEmpty(page: NotePageContent): boolean {
 export interface PrintSheet {
   note: Note
   pageNumber: number
+  totalPages: number
   continuationLayout: boolean
 }
 
 /** Expand a note with extra_pages into individual print sheets. */
 export function expandNoteToPrintPages(note: Note): PrintSheet[] {
-  const sheets: PrintSheet[] = [{ note, pageNumber: 1, continuationLayout: false }]
   const extras = note.extra_pages ?? []
+  const totalPages = 1 + extras.length
+  const sheets: PrintSheet[] = [
+    { note, pageNumber: 1, totalPages, continuationLayout: false },
+  ]
 
   for (let i = 0; i < extras.length; i++) {
     sheets.push({
@@ -33,6 +37,7 @@ export function expandNoteToPrintPages(note: Note): PrintSheet[] {
         extra_pages: [],
       },
       pageNumber: i + 2,
+      totalPages,
       continuationLayout: true,
     })
   }

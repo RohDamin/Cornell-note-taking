@@ -2,6 +2,7 @@ import { useRef, useEffect, type ClipboardEvent, type KeyboardEvent } from 'reac
 import NoteRulesLayer from './NoteRulesLayer'
 import {
   formatNoteCreatedAt,
+  getNotePageCount,
   type Note,
   type NoteField,
   type NotePageField,
@@ -32,6 +33,7 @@ interface NoteEditorProps {
   pageIndex?: number
   continuationLayout?: boolean
   pageNumber?: number
+  totalPages?: number
   onFieldChange: (
     pageIndex: number,
     field: NoteField | NotePageField,
@@ -273,6 +275,7 @@ export default function NoteEditor({
   pageIndex = 0,
   continuationLayout = false,
   pageNumber,
+  totalPages,
   onFieldChange,
   onRemovePage,
 }: NoteEditorProps) {
@@ -305,9 +308,15 @@ export default function NoteEditor({
   }
 
   const titleClass = readOnly ? 'cursor-default text-slate-600' : 'text-slate-900'
-  const displayPageNumber = pageNumber ?? (pageIndex > 0 ? pageIndex + 1 : null)
+  const pageTotal = totalPages ?? getNotePageCount(note)
+  const currentPage = pageNumber ?? pageIndex + 1
+  const showPageLabel = pageTotal > 1
+  const pageLabel = showPageLabel
+    ? `PAGE ${currentPage}/${pageTotal}`
+    : null
   const createdAtLabel =
     pageIndex === 0 && !forPrint ? formatNoteCreatedAt(note.created_at) : null
+  const showTopMeta = !isContinuation && (createdAtLabel || pageLabel)
 
   return (
     <article
@@ -322,10 +331,21 @@ export default function NoteEditor({
 
       {!isContinuation && (
         <>
-          {createdAtLabel && (
-            <p className="note-pad-inset shrink-0 pt-6 text-[10px] font-medium tracking-wide text-slate-400">
-              Created {createdAtLabel}
-            </p>
+          {showTopMeta && (
+            <div className="note-pad-inset flex shrink-0 items-center justify-between pt-6">
+              {createdAtLabel ? (
+                <p className="text-[10px] font-medium tracking-wide text-slate-400">
+                  Created {createdAtLabel}
+                </p>
+              ) : (
+                <span />
+              )}
+              {pageLabel && (
+                <span className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">
+                  {pageLabel}
+                </span>
+              )}
+            </div>
           )}
           <input
             type="text"
@@ -334,7 +354,7 @@ export default function NoteEditor({
             onChange={(e) => changeField('main_title', e.target.value)}
             placeholder="01. Enter a title"
             className={`note-pad-inset shrink-0 border-0 bg-transparent ${
-              createdAtLabel ? 'pt-2' : 'pt-8'
+              showTopMeta ? 'pt-2' : 'pt-8'
             } text-2xl font-bold tracking-tight placeholder:text-slate-300 focus:outline-none focus:ring-0 ${titleClass}`}
           />
 
@@ -349,10 +369,10 @@ export default function NoteEditor({
         </>
       )}
 
-      {isContinuation && displayPageNumber != null && (
+      {isContinuation && pageLabel && (
         <div className="note-pad-inset flex shrink-0 items-center justify-between gap-3 pt-8 pb-4">
           <span className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">
-            Page {displayPageNumber}
+            {pageLabel}
           </span>
           {onRemovePage && (
             <button

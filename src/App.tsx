@@ -511,6 +511,7 @@ export default function App() {
                   note={currentNote}
                   readOnly={readOnly}
                   pageIndex={pageIndex}
+                  totalPages={pageCount}
                   onFieldChange={handlePageFieldChange}
                   onRemovePage={
                     pageIndex > 0 && !readOnly
