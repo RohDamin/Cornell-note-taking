@@ -14,6 +14,12 @@ function noteSaveErrorMessage(message: string): string {
       'Open Supabase → SQL Editor and run supabase/migrations/20250608_add_note_created_at.sql'
     )
   }
+  if (message.includes("'deleted_at'") || message.includes('deleted_at')) {
+    return (
+      'Database is missing the deleted_at column. ' +
+      'Open Supabase → SQL Editor and run supabase/migrations/20250608_add_note_deleted_at.sql'
+    )
+  }
   return message
 }
 
@@ -26,6 +32,7 @@ export async function fetchNotesByChapter(
     .select('*')
     .eq('chapter_id', chapterId)
     .eq('user_id', userId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: true })
 
   if (error) return { data: [], error: noteSaveErrorMessage(error.message) }
@@ -75,10 +82,11 @@ export async function deleteNote(
 ): Promise<{ error: string | null }> {
   const { error } = await supabase
     .from('notes')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
     .eq('user_id', userId)
+    .is('deleted_at', null)
 
-  if (error) return { error: error.message }
+  if (error) return { error: noteSaveErrorMessage(error.message) }
   return { error: null }
 }

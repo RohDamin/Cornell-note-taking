@@ -17,13 +17,16 @@ create table if not exists public.notes (
   notes_content text,
   summary_content text,
   extra_pages jsonb not null default '[]'::jsonb,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  deleted_at timestamptz
 );
 
 -- 기존 DB에 extra_pages 컬럼이 없다면:
 -- alter table public.notes add column if not exists extra_pages jsonb not null default '[]'::jsonb;
 -- 기존 DB에 created_at 컬럼이 없다면:
 -- alter table public.notes add column if not exists created_at timestamptz not null default now();
+-- 기존 DB에 deleted_at 컬럼이 없다면:
+-- alter table public.notes add column if not exists deleted_at timestamptz;
 
 alter table public.chapters enable row level security;
 alter table public.notes enable row level security;

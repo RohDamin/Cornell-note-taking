@@ -11,6 +11,7 @@ export interface Note {
   chapter_id: string | null
   user_id: string | null
   created_at: string | null
+  deleted_at: string | null
   main_title: string | null
   sub_title: string | null
   keyword_content: string | null
@@ -21,7 +22,7 @@ export interface Note {
 
 export type NoteField = keyof Omit<
   Note,
-  'id' | 'chapter_id' | 'user_id' | 'extra_pages' | 'created_at'
+  'id' | 'chapter_id' | 'user_id' | 'extra_pages' | 'created_at' | 'deleted_at'
 >
 
 export type NotePageField = keyof NotePageContent
@@ -35,6 +36,7 @@ export function createEmptyNote(
     chapter_id: chapterId,
     user_id: userId,
     created_at: new Date().toISOString(),
+    deleted_at: null,
     main_title: '',
     sub_title: '',
     keyword_content: '',
