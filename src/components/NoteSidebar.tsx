@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Pencil } from 'lucide-react'
 import type { Chapter } from '../types/chapter'
 import type { Note } from '../types/note'
 
@@ -11,6 +12,7 @@ interface NoteSidebarProps {
   loadingChapterId: string | null
   onToggleChapter: (chapterId: string) => void
   onCreateChapter: (name: string) => void
+  onUpdateChapter: (chapterId: string, name: string) => void
   onCreateNote: (chapterId: string) => void
   onSelectNote: (note: Note) => void
   onDeleteNote: (note: Note) => void
@@ -29,12 +31,15 @@ export default function NoteSidebar({
   loadingChapterId,
   onToggleChapter,
   onCreateChapter,
+  onUpdateChapter,
   onCreateNote,
   onSelectNote,
   onDeleteNote,
 }: NoteSidebarProps) {
   const [newChapterName, setNewChapterName] = useState('')
   const [showChapterInput, setShowChapterInput] = useState(false)
+  const [editingChapterId, setEditingChapterId] = useState<string | null>(null)
+  const [editChapterName, setEditChapterName] = useState('')
 
   if (!isLoggedIn) {
     return (
@@ -54,6 +59,27 @@ export default function NoteSidebar({
     setShowChapterInput(false)
   }
 
+  const startEditingChapter = (chapterId: string, name: string) => {
+    setEditingChapterId(chapterId)
+    setEditChapterName(name)
+  }
+
+  const cancelEditingChapter = () => {
+    setEditingChapterId(null)
+    setEditChapterName('')
+  }
+
+  const saveEditingChapter = () => {
+    if (!editingChapterId) return
+    const name = editChapterName.trim()
+    if (!name) {
+      cancelEditingChapter()
+      return
+    }
+    onUpdateChapter(editingChapterId, name)
+    cancelEditingChapter()
+  }
+
   return (
     <aside className="print:hidden flex w-56 shrink-0 flex-col border-r border-slate-200 bg-slate-50">
       <nav className="flex-1 overflow-y-auto p-2">
@@ -69,12 +95,12 @@ export default function NoteSidebar({
               const isLoading = loadingChapterId === chapter.id
 
               return (
-                <li key={chapter.id} className="rounded-md">
+                <li key={chapter.id} className="group rounded-md">
                   <div className="flex items-center gap-1 rounded-md px-1 py-1 transition hover:bg-white/80">
                     <button
                       type="button"
                       onClick={() => onToggleChapter(chapter.id)}
-                      className="flex min-w-0 flex-1 items-center gap-1 py-1.5 text-left"
+                      className="flex shrink-0 items-center py-1.5 text-left"
                     >
                       <span
                         className={`shrink-0 text-[15px] text-slate-400 transition ${
@@ -83,17 +109,54 @@ export default function NoteSidebar({
                       >
                         ▶
                       </span>
-                      <span className="truncate text-[17px] font-medium text-slate-700">
-                        {chapter.name}
-                      </span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => onCreateNote(chapter.id)}
-                      className="shrink-0 rounded px-1.5 py-1 text-[15px] text-slate-500 transition hover:bg-white hover:text-slate-800"
-                    >
-                      Add Note
-                    </button>
+                    {editingChapterId === chapter.id ? (
+                      <input
+                        type="text"
+                        value={editChapterName}
+                        onChange={(e) => setEditChapterName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditingChapter()
+                          if (e.key === 'Escape') cancelEditingChapter()
+                        }}
+                        onBlur={saveEditingChapter}
+                        autoFocus
+                        className="min-w-0 flex-1 rounded-md border border-slate-300 px-1.5 py-0.5 text-[17px] font-medium text-slate-700 outline-none focus:border-slate-500"
+                      />
+                    ) : (
+                      <div className="relative min-w-0 flex-1">
+                        <button
+                          type="button"
+                          onClick={() => onToggleChapter(chapter.id)}
+                          onDoubleClick={() =>
+                            startEditingChapter(chapter.id, chapter.name)
+                          }
+                          className="w-full py-1.5 pr-0 text-left text-[17px] font-medium text-slate-700 group-hover:pr-6"
+                        >
+                          <span className="block truncate">{chapter.name}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            startEditingChapter(chapter.id, chapter.name)
+                          }
+                          className="absolute right-0 top-1/2 hidden -translate-y-1/2 rounded p-1 text-slate-400 group-hover:flex hover:bg-white hover:text-slate-700"
+                          aria-label={`Rename ${chapter.name}`}
+                          title="Rename chapter"
+                        >
+                          <Pencil size={14} strokeWidth={2} aria-hidden />
+                        </button>
+                      </div>
+                    )}
+                    {isOpen && (
+                      <button
+                        type="button"
+                        onClick={() => onCreateNote(chapter.id)}
+                        className="shrink-0 rounded px-1.5 py-1 text-[15px] text-slate-500 transition hover:bg-white hover:text-slate-800"
+                      >
+                        Add Note
+                      </button>
+                    )}
                   </div>
 
                   {isOpen && (

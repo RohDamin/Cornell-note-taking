@@ -31,16 +31,15 @@ body {
   color: #1e293b;
 }
 
-/* A4 노트 패드 — 실제 비율 유지, 화면에서는 메인 영역 너비에 맞춤 (최대 1.25배) */
-.screen-only,
-.note-scroll-panel {
+/* A4 노트 패드 — 화면 너비에 맞추되 최대 1.45배로 제한 (인쇄는 실제 A4 유지) */
+.screen-only {
   container-type: inline-size;
   container-name: note-main;
 }
 
 @container note-main (min-width: 0) {
-  .screen-only {
-    --pad-scale: min(1.25, 100cqw / 210mm);
+  .note-scroll-panel {
+    --pad-scale: min(1.45, calc((100cqw - 2rem) / 210mm));
   }
 
   .a4-pad-wrapper {

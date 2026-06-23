@@ -6,7 +6,12 @@ import NoteEditor from './components/NoteEditor'
 import NoteSidebar from './components/NoteSidebar'
 import TopBar from './components/TopBar'
 import { useAuth } from './context/AuthContext'
-import { createChapter, fetchChapters } from './services/chapterService'
+import {
+  createChapter,
+  fetchChapters,
+  sortChaptersByName,
+  updateChapter,
+} from './services/chapterService'
 import {
   deleteNote,
   fetchNotesByChapter,
@@ -280,14 +285,27 @@ export default function App() {
       return
     }
     if (data) {
-      setChapters((prev) =>
-        [...prev, data].sort((a, b) => a.name.localeCompare(b.name, 'ko')),
-      )
+      setChapters((prev) => sortChaptersByName([...prev, data]))
       setExpandedChapterIds((prev) => new Set(prev).add(data.id))
       const note = createEmptyNote(data.id, userId)
       setNotesByChapter((prev) => ({ ...prev, [data.id]: [note] }))
       setCurrentNote(note)
       setSaveStatus('idle')
+      setSaveMessage(null)
+    }
+  }
+
+  const handleUpdateChapter = async (chapterId: string, name: string) => {
+    if (!userId) return
+    const { data, error } = await updateChapter(chapterId, userId, name)
+    if (error) {
+      setSaveMessage(error)
+      return
+    }
+    if (data) {
+      setChapters((prev) =>
+        sortChaptersByName(prev.map((c) => (c.id === data.id ? data : c))),
+      )
       setSaveMessage(null)
     }
   }
@@ -491,6 +509,7 @@ export default function App() {
           loadingChapterId={loadingChapterId}
           onToggleChapter={handleToggleChapter}
           onCreateChapter={handleCreateChapter}
+          onUpdateChapter={handleUpdateChapter}
           onCreateNote={handleCreateNote}
           onSelectNote={handleSelectNote}
           onDeleteNote={handleDeleteNote}
