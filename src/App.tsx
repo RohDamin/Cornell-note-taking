@@ -519,7 +519,7 @@ export default function App() {
           <div
             ref={noteScrollRef}
             onScroll={syncContactVisibility}
-            className="note-scroll-panel flex flex-1 flex-col items-center overflow-y-auto px-4 pb-6 pt-6"
+            className="note-scroll-panel flex flex-1 flex-col items-center overflow-y-auto overflow-x-hidden px-4 pb-6 pt-6"
           >
             {Array.from({ length: pageCount }, (_, pageIndex) => (
               <div
@@ -551,7 +551,6 @@ export default function App() {
                 </button>
               </div>
             )}
-            <div className="note-pad-scroll-spacer" aria-hidden />
           </div>
           {showContact && <ContactLink />}
         </div>

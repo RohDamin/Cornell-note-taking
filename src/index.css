@@ -40,6 +40,7 @@ body {
 @container note-main (min-width: 0) {
   .note-scroll-panel {
     --pad-scale: min(1.45, calc((100cqw - 2rem) / 210mm));
+    overflow-x: hidden;
   }
 
   .a4-pad-wrapper {
@@ -47,13 +48,8 @@ body {
     height: 297mm;
     transform: scale(var(--pad-scale));
     transform-origin: top center;
-    margin-bottom: max(0px, calc(297mm * (1 - var(--pad-scale))));
-  }
-
-  /* scale로 튀어나온 시각 높이만큼 스크롤 여유 확보 */
-  .note-pad-scroll-spacer {
-    width: 100%;
-    height: max(0px, calc(297mm * (var(--pad-scale) - 1)));
+    margin-inline: auto;
+    margin-bottom: calc(297mm * (var(--pad-scale) - 1));
     flex-shrink: 0;
   }
 
@@ -62,12 +58,12 @@ body {
   }
 
   .note-add-page-wrap {
-    width: 210mm;
+    width: calc(210mm * var(--pad-scale));
+    margin-top: 1.5rem;
+    margin-inline: auto;
     display: flex;
     justify-content: center;
-    margin-top: 1.5rem;
-    transform: scale(var(--pad-scale));
-    transform-origin: top center;
+    flex-shrink: 0;
   }
 
   .note-add-page-btn {
